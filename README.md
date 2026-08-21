@@ -151,6 +151,26 @@ finst --version               # Display CLI version
 
 ---
 
+## Valuation & Modeling Methodology
+
+### 1. Current Spot Price Progression
+In accordance with standard financial terminal matrix conventions (e.g. Bloomberg `FA`), the 7-period grid evaluates historical actuals, LTM, and forward consensus/projected estimates against the **current spot share price**:
+- **Market Capitalization**: Calculated as $P_{\text{spot}} \times \text{Diluted Shares}_t$ for each period, capturing historical share buyback and dilution dynamics.
+- **Valuation Multiples ($P/E, P/B, P/FCF, EV/EBITDA$)**: Display the progression curve and multiple compression/expansion on your **current entry price** as earnings grow from historical periods into the future ($T+1, T+2, T+3$).
+
+### 2. Cash Flow De-Accumulation (LTM)
+SEC Form 10-Q cash flow statements report cumulative Year-To-Date (YTD) amounts ($3\text{M}, 6\text{M}, 9\text{M}, 12\text{M}$). `finst` automatically de-accumulates discrete quarterly cash flows:
+$$CF_{Q2} = \text{YTD}_{6\text{M}} - \text{YTD}_{3\text{M}}, \quad CF_{Q3} = \text{YTD}_{9\text{M}} - \text{YTD}_{6\text{M}}, \quad CF_{Q4} = \text{FY}_{12\text{M}} - \text{YTD}_{9\text{M}}$$
+This ensures the LTM/Base period accurately reflects the true trailing 12-month rolling cash flow without single-quarter truncation.
+
+### 3. Negative Equity & Deficit Standards
+For companies with negative stockholders' equity resulting from leveraged recapitalizations or aggressive share buybacks (e.g. `DPZ`):
+- **P/B & EV/Book**: Reported as `N/A` (economically undefined).
+- **ROE**: Reported as `--` (Not Meaningful / avoids misleading negative returns for profitable businesses).
+- **ROIC**: Evaluated on active invested capital ($\text{Total Debt} + \text{Equity} - \text{Cash}$).
+
+---
+
 ## Testing
 
 Run the full automated test suite covering metrics, multiple formulas, negative denominator handling, CAGR bounds clamping, SQLite repository TTLs, and table snapshot rendering:
