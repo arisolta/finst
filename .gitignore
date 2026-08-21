@@ -1,0 +1,43 @@
+# Binaries & Build Output
+finst
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+bin/
+dist/
+
+# Test Artifacts & Coverage
+*.test
+*.prof
+coverage.out
+coverage.html
+
+# Local SQLite Cache & Temp DBs
+*.db
+*.db-shm
+*.db-wal
+.finst/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Specifications & Private Docs
+spec-sheet-v2.md
+spec*.md
+*specsheet*
