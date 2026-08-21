@@ -169,6 +169,12 @@ For companies with negative stockholders' equity resulting from leveraged recapi
 - **ROE**: Reported as `--` (Not Meaningful / avoids misleading negative returns for profitable businesses).
 - **ROIC**: Evaluated on active invested capital ($\text{Total Debt} + \text{Equity} - \text{Cash}$).
 
+### 4. Forward Estimates & Hybrid Forecasting Engine
+The forward matrix ($T+1, T+2, T+3$) uses a two-tier hybrid model:
+- **Analyst Consensus (`Cons`)**: Ingested directly from institutional sell-side equity research consensus (covering mean Revenue and EPS forecasts for $T+1$ and $T+2$).
+- **Margin-Based Line Item Modeling**: Because consensus only forecasts Revenue and EPS, line items (Gross Profit, EBITDA, D&A, CapEx, and FCF) are modeled by applying the company's 3-year historical average margins and conversion rates to the consensus top-line numbers.
+- **Heuristic Fallback Projections (`Proj`)**: For years beyond sell-side coverage ($T+3$) or uncovered tickers, revenue is projected using the 3-year historical Compound Annual Growth Rate (CAGR) clamped to $[-5.0\%, +25.0\%]$ to prevent unrealistic runaway compounding.
+
 ---
 
 ## Testing
