@@ -6,15 +6,15 @@ A high-performance, terminal-native, Bloomberg FA-style financial analysis CLI w
 
 ## Features
 
-- **7-Period Financial Matrix**: Displays $T-3, T-2, T-1$ historical actuals, LTM/Base rolling metrics, and $T+1, T+2, T+3$ forward estimates.
+- **7-Period Financial Matrix**: Displays `T-3`, `T-2`, `T-1` historical actuals, `LTM/Base` rolling metrics, and `T+1`, `T+2`, `T+3` forward estimates.
 - **Dual Ingestion Protocol**:
   - **SEC EDGAR XBRL REST API**: Primary high-fidelity reporting for US equities (10-K & 10-Q filings with CIK directory mapping).
   - **Public Global Feeds**: International coverage (`.PA`, `.T`, `.L`, `.TO`, `.DE`, etc.), live quotes, shares outstanding, and analyst consensus estimates.
 - **Automated Forward Modeling**:
-  - Automatically incorporates Wall Street consensus estimates ($T+1, T+2$).
-  - Gracefully triggers a 3-year margin-based heuristic projection engine with clamped CAGR $[-5\%, +25\%]$ when consensus data is unavailable.
+  - Automatically incorporates Wall Street consensus estimates (`T+1`, `T+2`).
+  - Gracefully triggers a 3-year margin-based heuristic projection engine with clamped CAGR `[-5%, +25%]` when consensus data is unavailable.
 - **FX Normalization**: Live & historical cross-currency rate conversions powered by the ECB / Frankfurter API.
-- **Zero-CGO SQLite Cache**: Local tiered caching (`~/.finst/cache.db`) for sub-second responses ($< 20\text{ms}$ on cache hit).
+- **Zero-CGO SQLite Cache**: Local tiered caching (`~/.finst/cache.db`) for sub-second responses (`< 20ms` on cache hit).
 - **Multiple Views & Export**: Full Bloomberg slate/amber styled terminal table, compact summary view, raw JSON export, and CSV export.
 
 ---
@@ -155,25 +155,30 @@ finst --version               # Display CLI version
 
 ### 1. Current Spot Price Progression
 In accordance with standard financial terminal matrix conventions (e.g. Bloomberg `FA`), the 7-period grid evaluates historical actuals, LTM, and forward consensus/projected estimates against the **current spot share price**:
-- **Market Capitalization**: Calculated as $P_{\text{spot}} \times \text{Diluted Shares}_t$ for each period, capturing historical share buyback and dilution dynamics.
-- **Valuation Multiples ($P/E, P/B, P/FCF, EV/EBITDA$)**: Display the progression curve and multiple compression/expansion on your **current entry price** as earnings grow from historical periods into the future ($T+1, T+2, T+3$).
+- **Market Capitalization**: Calculated as `Current Spot Price × Diluted Shares` for each period, capturing historical share buyback and dilution dynamics.
+- **Valuation Multiples (P/E, P/B, P/FCF, EV/EBITDA)**: Display the progression curve and multiple compression/expansion on your **current entry price** as earnings grow from historical periods into the future (`T+1`, `T+2`, `T+3`).
 
 ### 2. Cash Flow De-Accumulation (LTM)
-SEC Form 10-Q cash flow statements report cumulative Year-To-Date (YTD) amounts ($3\text{M}, 6\text{M}, 9\text{M}, 12\text{M}$). `finst` automatically de-accumulates discrete quarterly cash flows:
-$$CF_{Q2} = \text{YTD}_{6\text{M}} - \text{YTD}_{3\text{M}}, \quad CF_{Q3} = \text{YTD}_{9\text{M}} - \text{YTD}_{6\text{M}}, \quad CF_{Q4} = \text{FY}_{12\text{M}} - \text{YTD}_{9\text{M}}$$
-This ensures the LTM/Base period accurately reflects the true trailing 12-month rolling cash flow without single-quarter truncation.
+SEC Form 10-Q cash flow statements report cumulative Year-To-Date (YTD) amounts (`3M`, `6M`, `9M`, `12M`). `finst` automatically de-accumulates discrete quarterly cash flows:
+
+- `Q1 = YTD(3M)`
+- `Q2 = YTD(6M) - YTD(3M)`
+- `Q3 = YTD(9M) - YTD(6M)`
+- `Q4 = FY(12M) - YTD(9M)`
+
+This ensures the `LTM/Base` period accurately reflects the true trailing 12-month rolling cash flow without single-quarter truncation.
 
 ### 3. Negative Equity & Deficit Standards
 For companies with negative stockholders' equity resulting from leveraged recapitalizations or aggressive share buybacks (e.g. `DPZ`):
 - **P/B & EV/Book**: Reported as `N/A` (economically undefined).
 - **ROE**: Reported as `--` (Not Meaningful / avoids misleading negative returns for profitable businesses).
-- **ROIC**: Evaluated on active invested capital ($\text{Total Debt} + \text{Equity} - \text{Cash}$).
+- **ROIC**: Evaluated on active invested capital (`Total Debt + Total Equity - Cash`).
 
 ### 4. Forward Estimates & Hybrid Forecasting Engine
-The forward matrix ($T+1, T+2, T+3$) uses a two-tier hybrid model:
-- **Analyst Consensus (`Cons`)**: Ingested directly from institutional sell-side equity research consensus (covering mean Revenue and EPS forecasts for $T+1$ and $T+2$).
+The forward matrix (`T+1`, `T+2`, `T+3`) uses a two-tier hybrid model:
+- **Analyst Consensus (`Cons`)**: Ingested directly from institutional sell-side equity research consensus (covering mean Revenue and EPS forecasts for `T+1` and `T+2`).
 - **Margin-Based Line Item Modeling**: Because consensus only forecasts Revenue and EPS, line items (Gross Profit, EBITDA, D&A, CapEx, and FCF) are modeled by applying the company's 3-year historical average margins and conversion rates to the consensus top-line numbers.
-- **Heuristic Fallback Projections (`Proj`)**: For years beyond sell-side coverage ($T+3$) or uncovered tickers, revenue is projected using the 3-year historical Compound Annual Growth Rate (CAGR) clamped to $[-5.0\%, +25.0\%]$ to prevent unrealistic runaway compounding.
+- **Heuristic Fallback Projections (`Proj`)**: For years beyond sell-side coverage (`T+3`) or uncovered tickers, revenue is projected using the 3-year historical Compound Annual Growth Rate (CAGR) clamped to `[-5.0%, +25.0%]` to prevent unrealistic runaway compounding.
 
 ---
 
