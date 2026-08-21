@@ -51,7 +51,7 @@ func RenderScreen(ds *model.FinancialDataset, viewMode string) string {
 		stdStr += "GAAP / SEC EDGAR"
 	}
 
-	priceStr := FormatPrice(ds.Price.SharePrice)
+	priceStr := FormatPrice(ds.Price.SharePrice, ds.DisplayCurrency)
 	mktCapStr := FormatNullableNumber(&ds.Periods[3].Revenue, 1) // placeholder or actual
 	if ds.Periods[3].MarketCap != nil {
 		mktCapStr = FormatNullableNumber(ds.Periods[3].MarketCap, 1)

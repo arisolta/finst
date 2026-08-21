@@ -47,12 +47,68 @@ func FormatCurrencyAmount(val float64) string {
 	return FormatNumber(val, 1)
 }
 
-// FormatPrice formats a share price with 2 decimals (e.g. "$82.40").
-func FormatPrice(val float64) string {
+// FormatPrice formats a share price with 2 decimals and appropriate currency symbol (e.g. "$82.40", "CHF 5.55", "€45.20", "£12.30", "¥1,500.00").
+func FormatPrice(val float64, currency string) string {
 	if val <= 0 {
 		return "--"
 	}
-	return "$" + FormatNumber(val, 2)
+	sym := CurrencySymbol(currency)
+	return sym + FormatNumber(val, 2)
+}
+
+// CurrencySymbol returns the formatted symbol or prefix for a currency code.
+func CurrencySymbol(currency string) string {
+	switch strings.ToUpper(strings.TrimSpace(currency)) {
+	case "USD":
+		return "$"
+	case "EUR":
+		return "€"
+	case "GBP":
+		return "£"
+	case "GBX", "GBPENCE":
+		return "p"
+	case "JPY":
+		return "¥"
+	case "CNY", "RMB":
+		return "¥"
+	case "CHF":
+		return "CHF "
+	case "HKD":
+		return "HK$"
+	case "CAD":
+		return "CA$"
+	case "AUD":
+		return "A$"
+	case "SGD":
+		return "S$"
+	case "INR":
+		return "₹"
+	case "BRL":
+		return "R$"
+	case "KRW":
+		return "₩"
+	case "SEK":
+		return "SEK "
+	case "NOK":
+		return "NOK "
+	case "DKK":
+		return "DKK "
+	case "NZD":
+		return "NZ$"
+	case "ZAR":
+		return "ZAR "
+	case "PLN":
+		return "PLN "
+	case "TRY":
+		return "₺"
+	case "MXN":
+		return "Mex$"
+	default:
+		if currency != "" {
+			return currency + " "
+		}
+		return "$"
+	}
 }
 
 // FormatEPS formats an EPS value with 2 decimals (e.g. "2.72").
