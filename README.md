@@ -176,9 +176,10 @@ For companies with negative stockholders' equity resulting from leveraged recapi
 
 ### 4. Forward Estimates & Hybrid Forecasting Engine
 The forward matrix (`T+1`, `T+2`, `T+3`) uses a two-tier hybrid model:
-- **Analyst Consensus (`Cons`)**: Ingested directly from institutional sell-side equity research consensus (covering mean Revenue and EPS forecasts for `T+1` and `T+2`).
-- **Margin-Based Line Item Modeling**: Because consensus only forecasts Revenue and EPS, line items (Gross Profit, EBITDA, D&A, CapEx, and FCF) are modeled by applying the company's 3-year historical average margins and conversion rates to the consensus top-line numbers.
-- **Heuristic Fallback Projections (`Proj`)**: For years beyond sell-side coverage (`T+3`) or uncovered tickers, revenue is projected using the 3-year historical Compound Annual Growth Rate (CAGR) clamped to `[-5.0%, +25.0%]` to prevent unrealistic runaway compounding.
+- **Analyst Consensus (`Cons`)**: Ingested directly from institutional sell-side equity research consensus (covering mean Revenue and EPS forecasts for `T+1` and `T+2`). Intermediate statement lines (Gross Profit, EBITDA, D&A, CapEx, and FCF) are modeled by applying the company's time-weighted historical margins to the consensus top-line numbers.
+- **Blended Growth & Margin Smoothing (`Proj`)**: For years beyond sell-side coverage (`T+3` / `2028E`), `finst` applies institutional blended smoothing to prevent abrupt margin cliff drops:
+  - **Revenue Growth**: `65% × Forward Consensus Growth (T+1 → T+2) + 35% × Historical 3Y CAGR` (clamped to `[-5.0%, +25.0%]`).
+  - **Operating Margins**: Exponentially smoothed across recent periods (`60% × T+2 Margin + 25% × T+1 Margin + 15% × Historical Baseline`).
 
 ---
 

@@ -143,6 +143,7 @@ func (b *DatasetBuilder) BuildDataset(
 		fwdPrevEPS = ltm.AdjEPS
 	}
 
+	var forwardPeriods []model.PeriodData
 	for step := 1; step <= 3; step++ {
 		targetFY := baseYear + step
 		var cons *model.ConsensusEstimate
@@ -150,7 +151,7 @@ func (b *DatasetBuilder) BuildDataset(
 			cons = c
 		}
 
-		fwdData := b.forecaster.ProjectForwardYear(targetFY, fwdPrevRev, dilutedShares, ratios, cons)
+		fwdData := b.forecaster.ProjectForwardYear(targetFY, fwdPrevRev, dilutedShares, ratios, cons, forwardPeriods)
 
 		// Compute YoY growth & EPS growth for forward year
 		if fwdPrevRev > 0 && fwdData.Revenue > 0 {
@@ -165,6 +166,7 @@ func (b *DatasetBuilder) BuildDataset(
 		// Calculate Forward Multiples
 		PopulateForwardMultiples(&fwdData, price, baseEquity)
 
+		forwardPeriods = append(forwardPeriods, fwdData)
 		periods = append(periods, fwdData)
 		fwdPrevRev = fwdData.Revenue
 		fwdPrevEPS = fwdData.DilutedAdjEPS

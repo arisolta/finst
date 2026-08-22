@@ -2,7 +2,6 @@ package engine
 
 import (
 	"math"
-	"sort"
 	"time"
 
 	"finst/internal/model"
@@ -14,17 +13,17 @@ func NewForecaster() *Forecaster {
 	return &Forecaster{}
 }
 
-// ProjectionRatios holds median 3-year historical ratios.
+// ProjectionRatios holds time-weighted historical ratios.
 type ProjectionRatios struct {
-	CAGR          float64
-	MedianGrossM  float64
-	MedianEBITDAM float64
-	MedianNetM    float64
-	MedianCapExR  float64
-	MedianDAR     float64
+	CAGR            float64
+	WeightedGrossM  float64
+	WeightedEBITDAM float64
+	WeightedNetM    float64
+	WeightedCapExR  float64
+	WeightedDAR     float64
 }
 
-// Compute3YearRatios calculates the median historical margins and clamped CAGR.
+// Compute3YearRatios calculates the time-weighted historical margins and clamped CAGR.
 func (f *Forecaster) Compute3YearRatios(historical []model.FinancialStatement) ProjectionRatios {
 	var grossMargins []float64
 	var ebitdaMargins []float64
@@ -63,22 +62,23 @@ func (f *Forecaster) Compute3YearRatios(historical []model.FinancialStatement) P
 	}
 
 	return ProjectionRatios{
-		CAGR:          cagr,
-		MedianGrossM:  median(grossMargins, 0.50), // fallback 50%
-		MedianEBITDAM: median(ebitdaMargins, 0.20),
-		MedianNetM:    median(netMargins, 0.15),
-		MedianCapExR:  median(capexRatios, 0.05),
-		MedianDAR:     median(daRatios, 0.05),
+		CAGR:            cagr,
+		WeightedGrossM:  timeWeightedRatio(grossMargins, 0.50),
+		WeightedEBITDAM: timeWeightedRatio(ebitdaMargins, 0.20),
+		WeightedNetM:    timeWeightedRatio(netMargins, 0.15),
+		WeightedCapExR:  timeWeightedRatio(capexRatios, 0.05),
+		WeightedDAR:     timeWeightedRatio(daRatios, 0.05),
 	}
 }
 
-// ProjectForwardYear generates estimates for a given year using consensus or heuristic model.
+// ProjectForwardYear generates estimates for a given year using consensus or Option 2 blended model.
 func (f *Forecaster) ProjectForwardYear(
 	targetFY int,
 	prevRevenue float64,
 	dilutedShares float64,
 	ratios ProjectionRatios,
 	consensus *model.ConsensusEstimate,
+	priorForwardPeriods []model.PeriodData,
 ) model.PeriodData {
 	isConsensus := (consensus != nil && (consensus.EstRevenue > 0 || consensus.EstEPS != 0))
 
@@ -100,7 +100,7 @@ func (f *Forecaster) ProjectForwardYear(
 			if dilutedShares > 0 {
 				netIncome = eps * dilutedShares
 			} else {
-				netIncome = rev * ratios.MedianNetM
+				netIncome = rev * ratios.WeightedNetM
 			}
 		} else if consensus.EstNetIncome != 0 {
 			netIncome = consensus.EstNetIncome
@@ -108,7 +108,7 @@ func (f *Forecaster) ProjectForwardYear(
 				eps = netIncome / dilutedShares
 			}
 		} else {
-			netIncome = rev * ratios.MedianNetM
+			netIncome = rev * ratios.WeightedNetM
 			if dilutedShares > 0 {
 				eps = netIncome / dilutedShares
 			}
@@ -117,12 +117,12 @@ func (f *Forecaster) ProjectForwardYear(
 		if consensus.EstEBITDA > 0 {
 			ebitda = consensus.EstEBITDA
 		} else {
-			ebitda = rev * ratios.MedianEBITDAM
+			ebitda = rev * ratios.WeightedEBITDAM
 		}
 
-		grossProfit = rev * ratios.MedianGrossM
-		capex = -(rev * ratios.MedianCapExR)
-		da = rev * ratios.MedianDAR
+		grossProfit = rev * ratios.WeightedGrossM
+		capex = -(rev * ratios.WeightedCapExR)
+		da = rev * ratios.WeightedDAR
 
 		if consensus.EstCFO != 0 {
 			cfo = consensus.EstCFO
@@ -141,24 +141,75 @@ func (f *Forecaster) ProjectForwardYear(
 		}
 		fcf = cfo - math.Abs(capex)
 	} else {
-		// Heuristic Fallback Engine
-		rev = prevRevenue * (1.0 + ratios.CAGR)
-		grossProfit = rev * ratios.MedianGrossM
-		ebitda = rev * ratios.MedianEBITDAM
-		netIncome = rev * ratios.MedianNetM
-		if dilutedShares > 0 {
-			eps = netIncome / dilutedShares
-		}
-		capex = -(rev * ratios.MedianCapExR)
-		da = rev * ratios.MedianDAR
+		// Option 2: Blended Growth & Margin Smoothing
+		// If we have built prior forward periods (e.g. T+1 and T+2), blend forward momentum with historical baseline
+		nPrior := len(priorForwardPeriods)
+		if nPrior >= 2 && priorForwardPeriods[nPrior-1].Revenue > 0 && priorForwardPeriods[nPrior-2].Revenue > 0 {
+			p2 := priorForwardPeriods[nPrior-1] // T+2 (e.g. 2027E)
+			p1 := priorForwardPeriods[nPrior-2] // T+1 (e.g. 2026E)
 
-		deltaRev := rev - prevRevenue
-		if deltaRev < 0 {
-			deltaRev = 0
+			// 1. Blended Revenue Growth: 65% consensus momentum + 35% historical CAGR
+			gCons := (p2.Revenue - p1.Revenue) / p1.Revenue
+			gBlended := 0.65*gCons + 0.35*ratios.CAGR
+			gBlended = math.Max(-0.05, math.Min(0.25, gBlended))
+			rev = p2.Revenue * (1.0 + gBlended)
+
+			// 2. Exponentially smoothed margins: 60% T+2, 25% T+1, 15% structural baseline
+			gm2 := p2.GrossProfit / p2.Revenue
+			gm1 := p1.GrossProfit / p1.Revenue
+			gmBlended := 0.60*gm2 + 0.25*gm1 + 0.15*ratios.WeightedGrossM
+			grossProfit = rev * gmBlended
+
+			em2 := p2.EBITDA / p2.Revenue
+			em1 := p1.EBITDA / p1.Revenue
+			emBlended := 0.60*em2 + 0.25*em1 + 0.15*ratios.WeightedEBITDAM
+			ebitda = rev * emBlended
+
+			nm2 := p2.NetIncome / p2.Revenue
+			nm1 := p1.NetIncome / p1.Revenue
+			nmBlended := 0.60*nm2 + 0.25*nm1 + 0.15*ratios.WeightedNetM
+			netIncome = rev * nmBlended
+			if dilutedShares > 0 {
+				eps = netIncome / dilutedShares
+			}
+
+			da2 := p2.DepreciationAmortization / p2.Revenue
+			da1 := p1.DepreciationAmortization / p1.Revenue
+			daBlended := 0.60*da2 + 0.25*da1 + 0.15*ratios.WeightedDAR
+			da = rev * daBlended
+
+			capex2 := math.Abs(p2.CapEx) / p2.Revenue
+			capex1 := math.Abs(p1.CapEx) / p1.Revenue
+			capexBlended := 0.60*capex2 + 0.25*capex1 + 0.15*ratios.WeightedCapExR
+			capex = -(rev * capexBlended)
+
+			deltaRev := rev - p2.Revenue
+			if deltaRev < 0 {
+				deltaRev = 0
+			}
+			deltaNWC := 0.02 * deltaRev
+			cfo = netIncome + da - deltaNWC
+			fcf = cfo - math.Abs(capex)
+		} else {
+			// Single-period projection from prior historical
+			rev = prevRevenue * (1.0 + ratios.CAGR)
+			grossProfit = rev * ratios.WeightedGrossM
+			ebitda = rev * ratios.WeightedEBITDAM
+			netIncome = rev * ratios.WeightedNetM
+			if dilutedShares > 0 {
+				eps = netIncome / dilutedShares
+			}
+			capex = -(rev * ratios.WeightedCapExR)
+			da = rev * ratios.WeightedDAR
+
+			deltaRev := rev - prevRevenue
+			if deltaRev < 0 {
+				deltaRev = 0
+			}
+			deltaNWC := 0.02 * deltaRev
+			cfo = netIncome + da - deltaNWC
+			fcf = cfo - math.Abs(capex)
 		}
-		deltaNWC := 0.02 * deltaRev
-		cfo = netIncome + da - deltaNWC
-		fcf = cfo - math.Abs(capex)
 	}
 
 	gmPct := (grossProfit / rev) * 100
@@ -195,19 +246,18 @@ func (f *Forecaster) ProjectForwardYear(
 	}
 }
 
-func median(values []float64, fallback float64) float64 {
+func timeWeightedRatio(values []float64, fallback float64) float64 {
 	if len(values) == 0 {
 		return fallback
 	}
-	sorted := make([]float64, len(values))
-	copy(sorted, values)
-	sort.Float64s(sorted)
-
-	n := len(sorted)
-	if n%2 == 1 {
-		return sorted[n/2]
+	if len(values) == 1 {
+		return values[0]
 	}
-	return (sorted[n/2-1] + sorted[n/2]) / 2.0
+	if len(values) == 2 {
+		return 0.65*values[1] + 0.35*values[0]
+	}
+	n := len(values)
+	return 0.60*values[n-1] + 0.25*values[n-2] + 0.15*values[n-3]
 }
 
 func formatPeriodLabel(year int, source string) string {
