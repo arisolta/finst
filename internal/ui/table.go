@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	LineWidth  = 120
-	ColItemW   = 26
-	ColPeriodW = 13
+	LineWidth  = 118
+	ColItemW   = 28
+	ColPeriodW = 14
 )
 
 // RenderScreen renders the full terminal Bloomberg-style table.

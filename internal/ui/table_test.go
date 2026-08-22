@@ -108,11 +108,6 @@ func TestRenderScreen(t *testing.T) {
 				FiscalYear: 2027,
 				Revenue:    22275.2,
 			},
-			{
-				Label:      "2028E (Proj)",
-				FiscalYear: 2028,
-				Revenue:    23450.0,
-			},
 		},
 	}
 

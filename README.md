@@ -6,7 +6,7 @@ A high-performance, terminal-native, Bloomberg FA-style financial analysis CLI w
 
 ## Features
 
-- **7-Period Financial Matrix**: Displays `T-3`, `T-2`, `T-1` historical actuals, `LTM/Base` rolling metrics, and `T+1`, `T+2`, `T+3` forward estimates.
+- **6-Period Financial Matrix**: Displays `T-3`, `T-2`, `T-1` historical actuals, `LTM/Base` rolling metrics, and `T+1`, `T+2` forward consensus estimates (or synthetic heuristic projections if uncovered).
 - **Dual Ingestion Protocol**:
   - **SEC EDGAR XBRL REST API**: Primary high-fidelity reporting for US equities (10-K & 10-Q filings with CIK directory mapping).
   - **Public Global Feeds**: International coverage (`.PA`, `.T`, `.L`, `.TO`, `.DE`, etc.), live quotes, shares outstanding, and analyst consensus estimates.
@@ -154,9 +154,9 @@ finst --version               # Display CLI version
 ## Valuation & Modeling Methodology
 
 ### 1. Current Spot Price Progression
-In accordance with standard financial terminal matrix conventions (e.g. Bloomberg `FA`), the 7-period grid evaluates historical actuals, LTM, and forward consensus/projected estimates against the **current spot share price**:
+In accordance with standard financial terminal matrix conventions (e.g. Bloomberg `FA`), the 6-period grid evaluates historical actuals, LTM, and forward consensus/projected estimates against the **current spot share price**:
 - **Market Capitalization**: Calculated as `Current Spot Price × Diluted Shares` for each period, capturing historical share buyback and dilution dynamics.
-- **Valuation Multiples (P/E, P/B, P/FCF, EV/EBITDA)**: Display the progression curve and multiple compression/expansion on your **current entry price** as earnings grow from historical periods into the future (`T+1`, `T+2`, `T+3`).
+- **Valuation Multiples (P/E, P/B, P/FCF, EV/EBITDA)**: Display the progression curve and multiple compression/expansion on your **current entry price** as earnings grow from historical periods into the forward estimates (`T+1`, `T+2`).
 
 ### 2. Cash Flow De-Accumulation (LTM)
 SEC Form 10-Q cash flow statements report cumulative Year-To-Date (YTD) amounts (`3M`, `6M`, `9M`, `12M`). `finst` automatically de-accumulates discrete quarterly cash flows:
@@ -175,11 +175,11 @@ For companies with negative stockholders' equity resulting from leveraged recapi
 - **ROIC**: Evaluated on active invested capital (`Total Debt + Total Equity - Cash`).
 
 ### 4. Forward Estimates & Hybrid Forecasting Engine
-The forward matrix (`T+1`, `T+2`, `T+3`) uses a two-tier hybrid model:
+The forward matrix (`T+1`, `T+2`) uses a high-fidelity consensus model with automated synthetic fallback:
 - **Analyst Consensus (`Cons`)**: Ingested directly from institutional sell-side equity research consensus (covering mean Revenue and EPS forecasts for `T+1` and `T+2`). Intermediate statement lines (Gross Profit, EBITDA, D&A, CapEx, and FCF) are modeled by applying the company's time-weighted historical margins to the consensus top-line numbers.
-- **Blended Growth & Margin Smoothing (`Proj`)**: For years beyond sell-side coverage (`T+3` / `2028E`), `finst` applies institutional blended smoothing to prevent abrupt margin cliff drops:
-  - **Revenue Growth**: `65% × Forward Consensus Growth (T+1 → T+2) + 35% × Historical 3Y CAGR` (clamped to `[-5.0%, +25.0%]`).
-  - **Operating Margins**: Exponentially smoothed across recent periods (`60% × T+2 Margin + 25% × T+1 Margin + 15% × Historical Baseline`).
+- **Synthetic Fallback Projections (`Proj`)**: When a ticker has zero sell-side coverage, `finst` automatically generates conservative synthetic forecasts:
+  - **Revenue Growth**: Clamped historical CAGR (`[-5.0%, +25.0%]`).
+  - **Operating Margins**: Time-weighted historical baseline (`60% × T-1 + 25% × T-2 + 15% × T-3`).
 
 ---
 

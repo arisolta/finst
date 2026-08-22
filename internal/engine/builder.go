@@ -144,7 +144,7 @@ func (b *DatasetBuilder) BuildDataset(
 	}
 
 	var forwardPeriods []model.PeriodData
-	for step := 1; step <= 3; step++ {
+	for step := 1; step <= 2; step++ {
 		targetFY := baseYear + step
 		var cons *model.ConsensusEstimate
 		if c, ok := consMap[targetFY]; ok {
