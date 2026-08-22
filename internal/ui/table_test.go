@@ -78,6 +78,8 @@ func TestRenderScreen(t *testing.T) {
 				GrossMarginPct:           &gm,
 				EBITDA:                   6408.0,
 				EBITDAMarginPct:          &em,
+				EBIT:                     5048.0,
+				EBITMarginPct:            &em,
 				NetIncome:                4039.0,
 				NetMarginPct:             &netPct,
 				DilutedAdjEPS:            2.72,
@@ -123,6 +125,9 @@ func TestRenderScreen(t *testing.T) {
 	}
 	if !strings.Contains(out, "[OPERATING PERFORMANCE]") {
 		t.Errorf("output missing [OPERATING PERFORMANCE]")
+	}
+	if !strings.Contains(out, "EBIT") {
+		t.Errorf("output missing EBIT")
 	}
 	if !strings.Contains(out, "[VALUATION MULTIPLES]") {
 		t.Errorf("output missing [VALUATION MULTIPLES]")

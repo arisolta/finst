@@ -163,6 +163,8 @@ func (f *Forecaster) ProjectForwardYear(
 
 	gmPct := (grossProfit / rev) * 100
 	ebitdaPct := (ebitda / rev) * 100
+	ebit := ebitda - da
+	ebitPct := (ebit / rev) * 100
 	netPct := (netIncome / rev) * 100
 	var fcfConvPct *float64
 	if netIncome > 0 {
@@ -180,6 +182,8 @@ func (f *Forecaster) ProjectForwardYear(
 		GrossMarginPct:           &gmPct,
 		EBITDA:                   ebitda,
 		EBITDAMarginPct:          &ebitdaPct,
+		EBIT:                     ebit,
+		EBITMarginPct:            &ebitPct,
 		NetIncome:                netIncome,
 		NetMarginPct:             &netPct,
 		DilutedAdjEPS:            eps,

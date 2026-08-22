@@ -94,7 +94,7 @@ func BuildHistoricalPeriodData(
 	}
 
 	// Percentages & Margins
-	var yoyGrowth, epsGrowth, gmPct, ebitdaPct, netPct, fcfConvPct *float64
+	var yoyGrowth, epsGrowth, gmPct, ebitdaPct, ebitPct, netPct, fcfConvPct *float64
 
 	if prevRev > 0 && st.Revenue > 0 {
 		growth := ((st.Revenue - prevRev) / prevRev) * 100
@@ -112,6 +112,9 @@ func BuildHistoricalPeriodData(
 
 		em := (ebitda / st.Revenue) * 100
 		ebitdaPct = &em
+
+		ebm := (st.OperatingIncome / st.Revenue) * 100
+		ebitPct = &ebm
 
 		nm := (st.NetIncome / st.Revenue) * 100
 		netPct = &nm
@@ -163,6 +166,8 @@ func BuildHistoricalPeriodData(
 		GrossMarginPct:           gmPct,
 		EBITDA:                   ebitda,
 		EBITDAMarginPct:          ebitdaPct,
+		EBIT:                     st.OperatingIncome,
+		EBITMarginPct:            ebitPct,
 		NetIncome:                st.NetIncome,
 		NetMarginPct:             netPct,
 		DilutedAdjEPS:            st.AdjEPS,

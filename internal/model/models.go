@@ -114,6 +114,8 @@ type PeriodData struct {
 	GrossMarginPct  *float64 `json:"gross_margin_pct,omitempty"`
 	EBITDA          float64  `json:"ebitda"`
 	EBITDAMarginPct *float64 `json:"ebitda_margin_pct,omitempty"`
+	EBIT            float64  `json:"ebit"`
+	EBITMarginPct   *float64 `json:"ebit_margin_pct,omitempty"`
 	NetIncome       float64  `json:"net_income"`
 	NetMarginPct    *float64 `json:"net_margin_pct,omitempty"`
 	DilutedAdjEPS   float64  `json:"diluted_adj_eps"`

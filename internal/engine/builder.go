@@ -190,6 +190,7 @@ func (b *DatasetBuilder) BuildDataset(
 			p.Revenue /= scaleFactor
 			p.GrossProfit /= scaleFactor
 			p.EBITDA /= scaleFactor
+			p.EBIT /= scaleFactor
 			p.NetIncome /= scaleFactor
 			p.OperatingCashFlow /= scaleFactor
 			p.DepreciationAmortization /= scaleFactor
