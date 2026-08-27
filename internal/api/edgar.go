@@ -207,7 +207,12 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 		"CostOfGoodsSold", "CostOfPurchasedGoodsAndServices",
 	}
 	conceptGross := []string{"GrossProfit"}
-	conceptEBIT := []string{"OperatingIncomeLoss", "OperatingProfitLoss", "ProfitLossFromOperatingActivities"}
+	conceptEBIT := []string{
+		"OperatingIncomeLoss", "OperatingProfitLoss", "ProfitLossFromOperatingActivities",
+		"IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+		"IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+		"IncomeLossFromContinuingOperationsBeforeIncomeTaxes", "OperatingIncome",
+	}
 	conceptDA := []string{
 		"DepreciationDepletionAndAmortization", "DepreciationAndAmortization",
 		"DepreciationAndAmortisationExpense", "DepreciationAmortisationAndImpairmentLossesExcludingImpairmentLossesReversed",

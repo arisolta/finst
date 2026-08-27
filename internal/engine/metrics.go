@@ -87,11 +87,7 @@ func BuildHistoricalPeriodData(
 		mktCap = currentPrice.MarketCap
 	}
 
-	if currentPrice.EnterpriseValue > 0 && isLTM {
-		ev = currentPrice.EnterpriseValue
-	} else {
-		ev = CalculateEnterpriseValue(mktCap, debt, pref, cash)
-	}
+	ev = CalculateEnterpriseValue(mktCap, debt, pref, cash)
 
 	// Percentages & Margins
 	var yoyGrowth, epsGrowth, gmPct, ebitdaPct, ebitPct, netPct, fcfConvPct *float64
