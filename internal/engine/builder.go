@@ -45,8 +45,13 @@ func (b *DatasetBuilder) BuildDataset(
 	}
 
 	// Normalize price & valuation metrics to display currency
-	if price.Currency != "" && displayCurr != "" && price.Currency != displayCurr && b.normalizer.fxService != nil {
-		spot, err := b.normalizer.fxService.GetSpotRate(ctx, price.Currency, displayCurr)
+	origPriceCurr := price.Currency
+	if origPriceCurr == "" {
+		origPriceCurr = "USD"
+	}
+
+	if origPriceCurr != displayCurr && b.normalizer.fxService != nil {
+		spot, err := b.normalizer.fxService.GetSpotRate(ctx, origPriceCurr, displayCurr)
 		if err == nil && spot > 0 {
 			price.SharePrice *= spot
 			if price.MarketCap > 0 {
@@ -72,6 +77,21 @@ func (b *DatasetBuilder) BuildDataset(
 
 	hist := norm.Historical
 	ltm := norm.LTM
+
+	// Normalize historical share prices from trading currency (origPriceCurr) to display currency
+	if origPriceCurr != displayCurr && b.normalizer.fxService != nil {
+		for i := range hist {
+			if hist[i].HistoricalPrice > 0 {
+				avgRate, err := b.normalizer.fxService.GetAverageRate(ctx, origPriceCurr, displayCurr, hist[i].FiscalYear)
+				if err != nil || avgRate <= 0 {
+					avgRate, _ = b.normalizer.fxService.GetSpotRate(ctx, origPriceCurr, displayCurr)
+				}
+				if avgRate > 0 {
+					hist[i].HistoricalPrice *= avgRate
+				}
+			}
+		}
+	}
 
 	if price.SharesOutstanding == 0 && len(hist) > 0 {
 		price.SharesOutstanding = hist[len(hist)-1].DilutedShares
