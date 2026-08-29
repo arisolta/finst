@@ -510,7 +510,7 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 		if st.GrossProfit == 0 && st.Revenue != 0 && st.CostOfRevenue != 0 {
 			st.GrossProfit = st.Revenue - st.CostOfRevenue
 		}
-		if st.AdjEPS == 0 && st.DilutedShares > 0 && st.NetIncome != 0 {
+		if st.DilutedShares > 0 && st.NetIncome != 0 {
 			st.AdjEPS = st.NetIncome / st.DilutedShares
 		}
 		results = append(results, *st)

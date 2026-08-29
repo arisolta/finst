@@ -4,12 +4,12 @@ import "finst/internal/model"
 
 // CalculatePE computes P/E ratio. Returns nil if net income / EPS <= 0.
 func CalculatePE(marketCap, netIncome, sharePrice, adjEPS float64) *float64 {
-	if sharePrice > 0 && adjEPS > 0 {
-		val := sharePrice / adjEPS
-		return &val
-	}
 	if marketCap > 0 && netIncome > 0 {
 		val := marketCap / netIncome
+		return &val
+	}
+	if sharePrice > 0 && adjEPS > 0 {
+		val := sharePrice / adjEPS
 		return &val
 	}
 	return nil

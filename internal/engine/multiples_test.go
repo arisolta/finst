@@ -45,8 +45,8 @@ func TestMultiplesNegativeDenominators(t *testing.T) {
 }
 
 func TestMultiplesPositiveValues(t *testing.T) {
-	// Standard P/E
-	pe := CalculatePE(100000.0, 2500.0, 50.0, 2.0)
+	// Standard P/E: market cap 100,000 / net income 4,000 = 25.0
+	pe := CalculatePE(100000.0, 4000.0, 50.0, 2.0)
 	if pe == nil || *pe != 25.0 {
 		t.Fatalf("expected P/E 25.0, got %v", pe)
 	}
