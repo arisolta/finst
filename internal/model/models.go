@@ -64,6 +64,7 @@ type FinancialStatement struct {
 	TotalEquity              float64   `json:"total_equity"`
 	TaxExpense               float64   `json:"tax_expense,omitempty"`
 	PretaxIncome             float64   `json:"pretax_income,omitempty"`
+	HistoricalPrice          float64   `json:"historical_price,omitempty"`
 	UpdatedAt                time.Time `json:"updated_at"`
 }
 

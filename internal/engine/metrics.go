@@ -81,8 +81,13 @@ func BuildHistoricalPeriodData(
 		shares = currentPrice.SharesOutstanding
 	}
 
-	if shares > 0 && currentPrice.SharePrice > 0 {
-		mktCap = currentPrice.SharePrice * shares
+	sharePrice := currentPrice.SharePrice
+	if !isLTM && st.HistoricalPrice > 0 {
+		sharePrice = st.HistoricalPrice
+	}
+
+	if shares > 0 && sharePrice > 0 {
+		mktCap = sharePrice * shares
 	} else if currentPrice.MarketCap > 0 {
 		mktCap = currentPrice.MarketCap
 	}
@@ -126,7 +131,7 @@ func BuildHistoricalPeriodData(
 	roic := CalculateROIC(st.OperatingIncome, st.TaxExpense, st.PretaxIncome, st.TotalDebt, st.TotalEquity, st.CashAndEquiv)
 
 	// Multiples
-	pe := CalculatePE(mktCap, st.NetIncome, currentPrice.SharePrice, st.AdjEPS)
+	pe := CalculatePE(mktCap, st.NetIncome, sharePrice, st.AdjEPS)
 	pb := CalculatePB(mktCap, st.TotalEquity)
 	pfcf := CalculatePFCF(mktCap, fcf)
 	evEbitda := CalculateEVEBITDA(ev, ebitda)

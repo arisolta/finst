@@ -88,6 +88,7 @@ func runMigrations(db *sql.DB) error {
 		total_equity REAL,
 		tax_expense REAL,
 		pretax_income REAL,
+		historical_price REAL,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		PRIMARY KEY (ticker, period_type, fiscal_year, fiscal_period)
 	);
@@ -117,6 +118,9 @@ func runMigrations(db *sql.DB) error {
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 	`
-	_, err := db.Exec(schema)
-	return err
+	if _, err := db.Exec(schema); err != nil {
+		return err
+	}
+	_, _ = db.Exec(`ALTER TABLE financial_statements ADD COLUMN historical_price REAL;`)
+	return nil
 }

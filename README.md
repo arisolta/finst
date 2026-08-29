@@ -153,10 +153,10 @@ finst --version               # Display CLI version
 
 ## Valuation & Modeling Methodology
 
-### 1. Current Spot Price Progression
-In accordance with standard financial terminal matrix conventions (e.g. Bloomberg `FA`), the 6-period grid evaluates historical actuals, LTM, and forward consensus/projected estimates against the **current spot share price**:
-- **Market Capitalization**: Calculated as `Current Spot Price × Diluted Shares` for each period, capturing historical share buyback and dilution dynamics.
-- **Valuation Multiples (P/E, P/B, P/FCF, EV/EBITDA)**: Display the progression curve and multiple compression/expansion on your **current entry price** as earnings grow from historical periods into the forward estimates (`T+1`, `T+2`).
+### 1. Point-in-Time Market Cap & Spot Multiples Progression
+- **Historical Periods (`T-3`, `T-2`, `T-1`)**: Market Capitalization and valuation multiples (`P/E`, `P/B`, `P/FCF`, `EV/EBITDA`, `EV/EBIT`) are evaluated at the **actual historical share price at the end of each respective fiscal year**, reflecting the true point-in-time valuation multiples the company traded at.
+- **`LTM/Base`**: Evaluated at **today's live spot share price**, displaying the company's current trailing multiple.
+- **Forward Estimates (`T+1`, `T+2`)**: Multiples display the forward multiple compression/expansion on your **current entry price** as projected earnings grow.
 
 ### 2. Cash Flow De-Accumulation (LTM)
 SEC Form 10-Q cash flow statements report cumulative Year-To-Date (YTD) amounts (`3M`, `6M`, `9M`, `12M`). `finst` automatically de-accumulates discrete quarterly cash flows:

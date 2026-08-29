@@ -744,6 +744,100 @@ func (s *YahooService) ExtractConsensusEstimates(ticker string, res *YahooQuoteS
 	return estimates
 }
 
+// HistoricalPricePoint represents a date-indexed price point.
+type HistoricalPricePoint struct {
+	Date  time.Time
+	Close float64
+}
+
+// FetchHistoricalMonthlyPrices retrieves 5-year monthly historical closing prices from Yahoo Chart API.
+func (s *YahooService) FetchHistoricalMonthlyPrices(ctx context.Context, ticker string) ([]HistoricalPricePoint, error) {
+	chartURL := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s?range=5y&interval=1mo", url.PathEscape(ticker))
+	opts := &RequestOptions{
+		Headers: map[string]string{
+			"User-Agent": WebUserAgent,
+			"Accept":     "*/*",
+			"Referer":    "https://finance.yahoo.com/",
+		},
+		Timeout: 10 * time.Second,
+		Retries: 2,
+	}
+
+	data, err := s.client.Get(ctx, chartURL, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var raw struct {
+		Chart struct {
+			Result []struct {
+				Timestamp  []int64 `json:"timestamp"`
+				Indicators struct {
+					Quote []struct {
+						Close []*float64 `json:"close"`
+					} `json:"quote"`
+				} `json:"indicators"`
+			} `json:"result"`
+		} `json:"chart"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil || len(raw.Chart.Result) == 0 {
+		return nil, fmt.Errorf("failed to parse historical chart response: %w", err)
+	}
+
+	res := raw.Chart.Result[0]
+	if len(res.Timestamp) == 0 || len(res.Indicators.Quote) == 0 {
+		return nil, fmt.Errorf("empty chart history")
+	}
+
+	closes := res.Indicators.Quote[0].Close
+	var points []HistoricalPricePoint
+	for i, ts := range res.Timestamp {
+		if i < len(closes) && closes[i] != nil && *closes[i] > 0 {
+			t := time.Unix(ts, 0).UTC()
+			points = append(points, HistoricalPricePoint{
+				Date:  t,
+				Close: *closes[i],
+			})
+		}
+	}
+
+	return points, nil
+}
+
+// FindClosestPrice finds the closest historical closing price for a given target date or target FY.
+func FindClosestPrice(points []HistoricalPricePoint, targetDate string, targetFY int) float64 {
+	if len(points) == 0 {
+		return 0
+	}
+
+	var targetTime time.Time
+	if targetDate != "" {
+		if t, err := time.Parse("2006-01-02", targetDate); err == nil {
+			targetTime = t
+		}
+	}
+	if targetTime.IsZero() && targetFY > 0 {
+		targetTime = time.Date(targetFY, 12, 31, 0, 0, 0, 0, time.UTC)
+	}
+
+	var bestPrice float64
+	bestDiff := time.Duration(1<<63 - 1)
+
+	for _, pt := range points {
+		diff := pt.Date.Sub(targetTime)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff < bestDiff {
+			bestDiff = diff
+			bestPrice = pt.Close
+		}
+	}
+
+	return bestPrice
+}
+
 func httpNewGetRequest(ctx context.Context, url string, headers map[string]string) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

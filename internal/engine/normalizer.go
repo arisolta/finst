@@ -216,6 +216,9 @@ func (n *StatementNormalizer) convertStatement(ctx context.Context, st *model.Fi
 	st.TotalDebt *= spotRate
 	st.PreferredStock *= spotRate
 	st.TotalEquity *= spotRate
+	if st.HistoricalPrice > 0 {
+		st.HistoricalPrice *= avgRate
+	}
 }
 
 // ComputeCAGR computes compound annual growth rate clamped within [-5.0%, +25.0%].
