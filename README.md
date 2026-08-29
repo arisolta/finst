@@ -154,7 +154,7 @@ finst --version               # Display CLI version
 ## Valuation & Modeling Methodology
 
 ### 1. Point-in-Time Market Cap & Spot Multiples Progression
-- **Historical Periods (`T-3`, `T-2`, `T-1`)**: Market Capitalization and valuation multiples (`P/E`, `P/B`, `P/FCF`, `EV/EBITDA`, `EV/EBIT`) are evaluated at the **actual historical share price at the end of each respective fiscal year**, reflecting the true point-in-time valuation multiples the company traded at.
+- **Historical Periods (`T-3`, `T-2`, `T-1`)**: Market Capitalization and valuation multiples (`P/E`, `P/B`, `P/FCF`, `EV/Sales`, `EV/EBITDA`, `EV/EBIT`) are evaluated at the **actual historical share price at the end of each respective fiscal year**, reflecting the true point-in-time valuation multiples the company traded at.
 - **`LTM/Base`**: Evaluated at **today's live spot share price**, displaying the company's current trailing multiple.
 - **Forward Estimates (`T+1`, `T+2`)**: Multiples display the forward multiple compression/expansion on your **current entry price** as projected earnings grow.
 
@@ -170,7 +170,7 @@ This ensures the `LTM/Base` period accurately reflects the true trailing 12-mont
 
 ### 3. Negative Equity & Deficit Standards
 For companies with negative stockholders' equity resulting from leveraged recapitalizations or aggressive share buybacks (e.g. `DPZ`):
-- **P/B & EV/Book**: Reported as `N/A` (economically undefined).
+- **P/B**: Reported as `N/A` (economically undefined).
 - **ROE**: Reported as `--` (Not Meaningful / avoids misleading negative returns for profitable businesses).
 - **ROIC**: Evaluated on active invested capital (`Total Debt + Total Equity - Cash`).
 

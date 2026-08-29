@@ -33,6 +33,15 @@ func CalculatePFCF(marketCap, fcf float64) *float64 {
 	return &val
 }
 
+// CalculateEVSales computes EV/Sales (Revenue). Returns nil if Revenue <= 0 or EV <= 0.
+func CalculateEVSales(ev, revenue float64) *float64 {
+	if ev <= 0 || revenue <= 0 {
+		return nil
+	}
+	val := ev / revenue
+	return &val
+}
+
 // CalculateEVEBITDA computes EV/EBITDA. Returns nil if EBITDA <= 0 or EV <= 0.
 func CalculateEVEBITDA(ev, ebitda float64) *float64 {
 	if ev <= 0 || ebitda <= 0 {
@@ -48,15 +57,6 @@ func CalculateEVEBIT(ev, ebit float64) *float64 {
 		return nil
 	}
 	val := ev / ebit
-	return &val
-}
-
-// CalculateEVBook computes EV/Book value. Returns nil if Book <= 0 or EV <= 0.
-func CalculateEVBook(ev, totalEquity float64) *float64 {
-	if ev <= 0 || totalEquity <= 0 {
-		return nil
-	}
-	val := ev / totalEquity
 	return &val
 }
 
@@ -79,11 +79,11 @@ func PopulateForwardMultiples(
 	p.PE = CalculatePE(mktCap, p.NetIncome, currentPrice.SharePrice, p.DilutedAdjEPS)
 	p.PB = CalculatePB(mktCap, baseEquity)
 	p.PFCF = CalculatePFCF(mktCap, p.FreeCashFlow)
+	p.EVSales = CalculateEVSales(ev, p.Revenue)
 	p.EVEBITDA = CalculateEVEBITDA(ev, p.EBITDA)
 
 	ebit := p.EBITDA - p.DepreciationAmortization
 	p.EVEBIT = CalculateEVEBIT(ev, ebit)
-	p.EVBook = CalculateEVBook(ev, baseEquity)
 
 	// In forward years, capital structure line items are not projected, so leave as nil
 	p.MarketCap = nil

@@ -134,9 +134,9 @@ func BuildHistoricalPeriodData(
 	pe := CalculatePE(mktCap, st.NetIncome, sharePrice, st.AdjEPS)
 	pb := CalculatePB(mktCap, st.TotalEquity)
 	pfcf := CalculatePFCF(mktCap, fcf)
+	evSales := CalculateEVSales(ev, st.Revenue)
 	evEbitda := CalculateEVEBITDA(ev, ebitda)
 	evEbit := CalculateEVEBIT(ev, st.OperatingIncome)
-	evBook := CalculateEVBook(ev, st.TotalEquity)
 
 	// Cap Structure pointers
 	mktCapPtr := &mktCap
@@ -183,8 +183,8 @@ func BuildHistoricalPeriodData(
 		PE:                       pe,
 		PB:                       pb,
 		PFCF:                     pfcf,
+		EVSales:                  evSales,
 		EVEBITDA:                 evEbitda,
 		EVEBIT:                   evEbit,
-		EVBook:                   evBook,
 	}
 }

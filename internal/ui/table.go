@@ -129,9 +129,9 @@ func renderStandardRows(sb *strings.Builder, ds *model.FinancialDataset) {
 	printRowMultiple(sb, "P/E", ds.Periods, func(p model.PeriodData) *float64 { return p.PE })
 	printRowMultiple(sb, "P/B", ds.Periods, func(p model.PeriodData) *float64 { return p.PB })
 	printRowMultiple(sb, "P/FCF", ds.Periods, func(p model.PeriodData) *float64 { return p.PFCF })
+	printRowMultiple(sb, "EV/Sales", ds.Periods, func(p model.PeriodData) *float64 { return p.EVSales })
 	printRowMultiple(sb, "EV/EBITDA", ds.Periods, func(p model.PeriodData) *float64 { return p.EVEBITDA })
 	printRowMultiple(sb, "EV/EBIT", ds.Periods, func(p model.PeriodData) *float64 { return p.EVEBIT })
-	printRowMultiple(sb, "EV/Book", ds.Periods, func(p model.PeriodData) *float64 { return p.EVBook })
 }
 
 func renderCompactRows(sb *strings.Builder, ds *model.FinancialDataset) {
@@ -149,6 +149,7 @@ func renderCompactRows(sb *strings.Builder, ds *model.FinancialDataset) {
 
 	sb.WriteString(Colorize(ColorSection, " [VALUATION MULTIPLES]") + "\n")
 	printRowMultiple(sb, "P/E", ds.Periods, func(p model.PeriodData) *float64 { return p.PE })
+	printRowMultiple(sb, "EV/Sales", ds.Periods, func(p model.PeriodData) *float64 { return p.EVSales })
 	printRowMultiple(sb, "EV/EBITDA", ds.Periods, func(p model.PeriodData) *float64 { return p.EVEBITDA })
 	printRowMultiple(sb, "P/FCF", ds.Periods, func(p model.PeriodData) *float64 { return p.PFCF })
 }
@@ -264,9 +265,9 @@ func RenderCSV(ds *model.FinancialDataset) (string, error) {
 	addRow("P/E", func(p model.PeriodData) string { return FormatMultiple(p.PE) })
 	addRow("P/B", func(p model.PeriodData) string { return FormatMultiple(p.PB) })
 	addRow("P/FCF", func(p model.PeriodData) string { return FormatMultiple(p.PFCF) })
+	addRow("EV/Sales", func(p model.PeriodData) string { return FormatMultiple(p.EVSales) })
 	addRow("EV/EBITDA", func(p model.PeriodData) string { return FormatMultiple(p.EVEBITDA) })
 	addRow("EV/EBIT", func(p model.PeriodData) string { return FormatMultiple(p.EVEBIT) })
-	addRow("EV/Book", func(p model.PeriodData) string { return FormatMultiple(p.EVBook) })
 
 	w.Flush()
 	return buf.String(), nil

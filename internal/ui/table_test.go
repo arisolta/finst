@@ -27,9 +27,9 @@ func TestRenderScreen(t *testing.T) {
 	pe := 30.1
 	pb := 3.9
 	pfcf := 33.5
+	evSales := 6.3
 	evEbitda := 20.6
 	evEbit := 26.1
-	evBook := 4.2
 
 	dataset := &model.FinancialDataset{
 		Company: model.CompanyInfo{
@@ -94,9 +94,9 @@ func TestRenderScreen(t *testing.T) {
 				PE:                       &pe,
 				PB:                       &pb,
 				PFCF:                     &pfcf,
+				EVSales:                  &evSales,
 				EVEBITDA:                 &evEbitda,
 				EVEBIT:                   &evEbit,
-				EVBook:                   &evBook,
 			},
 			{
 				Label:      "2026E (Cons)",

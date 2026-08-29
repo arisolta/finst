@@ -137,9 +137,9 @@ type PeriodData struct {
 	PE       *float64 `json:"pe,omitempty"`
 	PB       *float64 `json:"pb,omitempty"`
 	PFCF     *float64 `json:"pfcf,omitempty"`
+	EVSales  *float64 `json:"ev_sales,omitempty"`
 	EVEBITDA *float64 `json:"ev_ebitda,omitempty"`
 	EVEBIT   *float64 `json:"ev_ebit,omitempty"`
-	EVBook   *float64 `json:"ev_book,omitempty"`
 }
 
 // FinancialDataset represents the full normalized dataset ready for UI or Export.
