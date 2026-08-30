@@ -163,6 +163,24 @@ func (b *DatasetBuilder) BuildDataset(
 		fwdPrevEPS = ltm.AdjEPS
 	}
 
+	// Calculate historical average dividend payout ratio
+	var totalDivs, totalNI float64
+	for _, st := range hist {
+		if st.CashDividendsPaid > 0 && st.NetIncome > 0 {
+			totalDivs += st.CashDividendsPaid
+			totalNI += st.NetIncome
+		}
+	}
+	var payoutRatio float64
+	if totalNI > 0 && totalDivs > 0 {
+		payoutRatio = totalDivs / totalNI
+	} else if ltm.NetIncome > 0 && ltm.CashDividendsPaid > 0 {
+		payoutRatio = ltm.CashDividendsPaid / ltm.NetIncome
+	}
+	if payoutRatio > 1.0 {
+		payoutRatio = 1.0 // clamp to 100% for conservative forward projection
+	}
+
 	var forwardPeriods []model.PeriodData
 	for step := 1; step <= 2; step++ {
 		targetFY := baseYear + step
@@ -184,7 +202,7 @@ func (b *DatasetBuilder) BuildDataset(
 		}
 
 		// Calculate Forward Multiples
-		PopulateForwardMultiples(&fwdData, price, baseEquity)
+		PopulateForwardMultiples(&fwdData, price, baseEquity, payoutRatio)
 
 		forwardPeriods = append(forwardPeriods, fwdData)
 		periods = append(periods, fwdData)

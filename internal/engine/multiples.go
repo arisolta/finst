@@ -60,11 +60,21 @@ func CalculateEVEBIT(ev, ebit float64) *float64 {
 	return &val
 }
 
+// CalculateDividendYield computes Dividend Yield %. Returns nil if market cap <= 0 or dividends <= 0.
+func CalculateDividendYield(marketCap, dividendsPaid float64) *float64 {
+	if marketCap <= 0 || dividendsPaid <= 0 {
+		return nil
+	}
+	val := (dividendsPaid / marketCap) * 100.0
+	return &val
+}
+
 // PopulateForwardMultiples calculates valuation ratios for forward projected periods holding EV & Market Cap constant.
 func PopulateForwardMultiples(
 	p *model.PeriodData,
 	currentPrice model.PriceValuation,
 	baseEquity float64,
+	payoutRatio float64,
 ) {
 	mktCap := currentPrice.MarketCap
 	if mktCap == 0 && currentPrice.SharePrice > 0 && p.DilutedAdjEPS > 0 {
@@ -84,6 +94,11 @@ func PopulateForwardMultiples(
 
 	ebit := p.EBITDA - p.DepreciationAmortization
 	p.EVEBIT = CalculateEVEBIT(ev, ebit)
+
+	if payoutRatio > 0 && p.NetIncome > 0 && mktCap > 0 {
+		fwdDividends := p.NetIncome * payoutRatio
+		p.DividendYieldPct = CalculateDividendYield(mktCap, fwdDividends)
+	}
 
 	// In forward years, capital structure line items are not projected, so leave as nil
 	p.MarketCap = nil

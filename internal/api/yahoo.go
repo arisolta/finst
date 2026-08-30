@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -405,16 +406,19 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 		"annualTotalDebt", "annualTotalStockholderEquity", "annualStockholdersEquity", "annualReconciledDepreciation",
 		"annualNormalizedEBITDA", "annualEBITDA", "annualFreeCashFlow", "annualPreferredStock",
 		"annualDilutedAverageShares", "annualOrdinarySharesNumber", "annualBasicAverageShares",
+		"annualCashDividendsPaid",
 		"trailingTotalRevenue", "trailingCostOfRevenue", "trailingGrossProfit", "trailingOperatingIncome",
 		"trailingOperatingExpense", "trailingNetIncomeContinuousOperations", "trailingNetIncome", "trailingDilutedEPS",
 		"trailingOperatingCashFlow", "trailingCapitalExpenditure", "trailingEndCashPosition", "trailingCashAndCashEquivalents",
 		"trailingTotalDebt", "trailingTotalStockholderEquity", "trailingStockholdersEquity", "trailingReconciledDepreciation",
 		"trailingNormalizedEBITDA", "trailingEBITDA", "trailingFreeCashFlow",
 		"trailingDilutedAverageShares", "trailingOrdinarySharesNumber",
+		"trailingCashDividendsPaid",
 		"quarterlyTotalRevenue", "quarterlyCostOfRevenue", "quarterlyGrossProfit", "quarterlyOperatingIncome",
 		"quarterlyNetIncomeContinuousOperations", "quarterlyOperatingCashFlow", "quarterlyCapitalExpenditure",
 		"quarterlyReconciledDepreciation", "quarterlyDilutedEPS", "quarterlyEndCashPosition", "quarterlyTotalDebt",
 		"quarterlyTotalStockholderEquity", "quarterlyDilutedAverageShares", "quarterlyOrdinarySharesNumber",
+		"quarterlyCashDividendsPaid",
 	}
 
 	typeStr := strings.Join(types, ",")
@@ -557,6 +561,8 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 				st.TotalDebt = numVal
 			case "annualPreferredStock":
 				st.PreferredStock = numVal
+			case "annualCashDividendsPaid", "quarterlyCashDividendsPaid", "trailingCashDividendsPaid":
+				st.CashDividendsPaid = math.Abs(numVal)
 			case "annualTotalStockholderEquity", "annualStockholdersEquity", "quarterlyTotalStockholderEquity", "trailingTotalStockholderEquity":
 				st.TotalEquity = numVal
 			case "annualDilutedAverageShares", "annualOrdinarySharesNumber", "annualBasicAverageShares",

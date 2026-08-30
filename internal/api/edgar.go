@@ -241,6 +241,10 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 		"LongTermDebtAndCapitalLeaseObligationsCurrent", "ShortTermBorrowings", "CurrentBorrowings",
 		"LongTermDebtCurrent", "DebtCurrent",
 	}
+	conceptDividends := []string{
+		"PaymentsOfDividendsCommonStock", "PaymentsOfDividends", "PaymentsOfOrdinaryDividends",
+		"DividendsCash", "PaymentsOfDividendsMinorityInterest", "Dividends",
+	}
 	conceptEPS := []string{"EarningsPerShareDiluted", "DilutedEarningsLossPerShare", "BasicAndDilutedEarningsLossPerShare", "EarningsPerShareBasic"}
 	conceptShares := []string{"WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageShares", "CommonStockSharesOutstanding"}
 
@@ -414,9 +418,15 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 			st.DilutedShares = val
 		}
 	})
+	processDuration(conceptDividends, true, func(st *model.FinancialStatement, val float64) {
+		absVal := math.Abs(val)
+		if st.CashDividendsPaid == 0 || absVal > st.CashDividendsPaid {
+			st.CashDividendsPaid = absVal
+		}
+	})
 
 	// De-accumulate YTD cash flows into discrete quarterly cash flows
-	for _, cNames := range [][]string{conceptCFO, conceptCapEx, conceptDA} {
+	for _, cNames := range [][]string{conceptCFO, conceptCapEx, conceptDA, conceptDividends} {
 		for _, name := range cNames {
 			for k, pMap := range ytdMap {
 				if k.Concept != name {
@@ -445,6 +455,10 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 							"DepreciationAndAmortisationExpense", "Depreciation":
 							if st.DepreciationAmortization == 0 {
 								st.DepreciationAmortization = val
+							}
+						case "PaymentsOfDividendsCommonStock", "PaymentsOfDividends", "PaymentsOfOrdinaryDividends", "DividendsCash", "Dividends":
+							if st.CashDividendsPaid == 0 {
+								st.CashDividendsPaid = math.Abs(val)
 							}
 						}
 					}

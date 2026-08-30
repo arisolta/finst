@@ -130,6 +130,7 @@ func (n *StatementNormalizer) computeLTM(quarters []model.FinancialStatement, an
 			ltm.CapEx += q.CapEx
 			ltm.TaxExpense += q.TaxExpense
 			ltm.PretaxIncome += q.PretaxIncome
+			ltm.CashDividendsPaid += q.CashDividendsPaid
 		}
 
 		if ltm.GrossProfit == 0 && ltm.Revenue > 0 && ltm.CostOfRevenue > 0 {
@@ -166,6 +167,9 @@ func (n *StatementNormalizer) computeLTM(quarters []model.FinancialStatement, an
 			}
 			if ltm.DepreciationAmortization == 0 || (lastAnn.DepreciationAmortization != 0 && math.Abs(ltm.DepreciationAmortization) < 0.25*math.Abs(lastAnn.DepreciationAmortization)) {
 				ltm.DepreciationAmortization = lastAnn.DepreciationAmortization
+			}
+			if ltm.CashDividendsPaid == 0 && lastAnn.CashDividendsPaid != 0 {
+				ltm.CashDividendsPaid = lastAnn.CashDividendsPaid
 			}
 		}
 
@@ -210,6 +214,7 @@ func (n *StatementNormalizer) convertStatement(ctx context.Context, st *model.Fi
 	st.TaxExpense *= avgRate
 	st.PretaxIncome *= avgRate
 	st.AdjEPS *= avgRate
+	st.CashDividendsPaid *= avgRate
 
 	// Stock (balance sheet) metrics convert by Spot FX Rate
 	st.CashAndEquiv *= spotRate

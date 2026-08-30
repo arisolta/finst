@@ -132,6 +132,7 @@ func renderStandardRows(sb *strings.Builder, ds *model.FinancialDataset) {
 	printRowMultiple(sb, "EV/Sales", ds.Periods, func(p model.PeriodData) *float64 { return p.EVSales })
 	printRowMultiple(sb, "EV/EBITDA", ds.Periods, func(p model.PeriodData) *float64 { return p.EVEBITDA })
 	printRowMultiple(sb, "EV/EBIT", ds.Periods, func(p model.PeriodData) *float64 { return p.EVEBIT })
+	printRowPct(sb, "Dividend Yield %", ds.Periods, func(p model.PeriodData) *float64 { return p.DividendYieldPct })
 }
 
 func renderCompactRows(sb *strings.Builder, ds *model.FinancialDataset) {
@@ -153,6 +154,7 @@ func renderCompactRows(sb *strings.Builder, ds *model.FinancialDataset) {
 	printRowMultiple(sb, "EV/Sales", ds.Periods, func(p model.PeriodData) *float64 { return p.EVSales })
 	printRowMultiple(sb, "EV/EBITDA", ds.Periods, func(p model.PeriodData) *float64 { return p.EVEBITDA })
 	printRowMultiple(sb, "P/FCF", ds.Periods, func(p model.PeriodData) *float64 { return p.PFCF })
+	printRowPct(sb, "Dividend Yield %", ds.Periods, func(p model.PeriodData) *float64 { return p.DividendYieldPct })
 }
 
 func printRow(sb *strings.Builder, name string, periods []model.PeriodData, decimals int, getter func(model.PeriodData) float64) {
@@ -269,6 +271,7 @@ func RenderCSV(ds *model.FinancialDataset) (string, error) {
 	addRow("EV/Sales", func(p model.PeriodData) string { return FormatMultiple(p.EVSales) })
 	addRow("EV/EBITDA", func(p model.PeriodData) string { return FormatMultiple(p.EVEBITDA) })
 	addRow("EV/EBIT", func(p model.PeriodData) string { return FormatMultiple(p.EVEBIT) })
+	addRow("Dividend Yield %", func(p model.PeriodData) string { return FormatPercentage(p.DividendYieldPct) })
 
 	w.Flush()
 	return buf.String(), nil

@@ -80,4 +80,13 @@ func TestMultiplesPositiveValues(t *testing.T) {
 	if str := ui.FormatMultiple(evEbit); str != "25.0x" {
 		t.Errorf("expected format '25.0x', got '%s'", str)
 	}
+
+	// Standard Dividend Yield: market cap 100,000 / dividends 2,500 = 2.5%
+	divYield := CalculateDividendYield(100000.0, 2500.0)
+	if divYield == nil || *divYield != 2.5 {
+		t.Fatalf("expected Dividend Yield 2.5%%, got %v", divYield)
+	}
+	if str := ui.FormatPercentage(divYield); str != "2.5%" {
+		t.Errorf("expected format '2.5%%', got '%s'", str)
+	}
 }

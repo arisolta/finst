@@ -137,6 +137,7 @@ func BuildHistoricalPeriodData(
 	evSales := CalculateEVSales(ev, st.Revenue)
 	evEbitda := CalculateEVEBITDA(ev, ebitda)
 	evEbit := CalculateEVEBIT(ev, st.OperatingIncome)
+	divYield := CalculateDividendYield(mktCap, st.CashDividendsPaid)
 
 	// Cap Structure pointers
 	mktCapPtr := &mktCap
@@ -186,5 +187,6 @@ func BuildHistoricalPeriodData(
 		EVSales:                  evSales,
 		EVEBITDA:                 evEbitda,
 		EVEBIT:                   evEbit,
+		DividendYieldPct:         divYield,
 	}
 }

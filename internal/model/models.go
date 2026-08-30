@@ -64,6 +64,7 @@ type FinancialStatement struct {
 	TotalEquity              float64   `json:"total_equity"`
 	TaxExpense               float64   `json:"tax_expense,omitempty"`
 	PretaxIncome             float64   `json:"pretax_income,omitempty"`
+	CashDividendsPaid        float64   `json:"cash_dividends_paid,omitempty"`
 	HistoricalPrice          float64   `json:"historical_price,omitempty"`
 	UpdatedAt                time.Time `json:"updated_at"`
 }
@@ -134,12 +135,13 @@ type PeriodData struct {
 	ROIC *float64 `json:"roic,omitempty"`
 
 	// Valuation Multiples
-	PE       *float64 `json:"pe,omitempty"`
-	PB       *float64 `json:"pb,omitempty"`
-	PFCF     *float64 `json:"pfcf,omitempty"`
-	EVSales  *float64 `json:"ev_sales,omitempty"`
-	EVEBITDA *float64 `json:"ev_ebitda,omitempty"`
-	EVEBIT   *float64 `json:"ev_ebit,omitempty"`
+	PE               *float64 `json:"pe,omitempty"`
+	PB               *float64 `json:"pb,omitempty"`
+	PFCF             *float64 `json:"pfcf,omitempty"`
+	EVSales          *float64 `json:"ev_sales,omitempty"`
+	EVEBITDA         *float64 `json:"ev_ebitda,omitempty"`
+	EVEBIT           *float64 `json:"ev_ebit,omitempty"`
+	DividendYieldPct *float64 `json:"dividend_yield_pct,omitempty"`
 }
 
 // FinancialDataset represents the full normalized dataset ready for UI or Export.
