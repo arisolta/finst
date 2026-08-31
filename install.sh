@@ -42,7 +42,11 @@ esac
 
 # 3. Find latest release tag
 printf "${BLUE}==>${RESET} Fetching latest release info from GitHub...\n"
-TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
+TAG=$(curl -sSL -I "https://github.com/${REPO}/releases/latest" 2>/dev/null | grep -i '^location:' | sed -E 's/.*\/tag\/([^\r\n]+).*/\1/' | tr -d '\r\n ' || true)
+
+if [ -z "$TAG" ]; then
+    TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | tr -d '\r\n ' || true)
+fi
 
 if [ -z "$TAG" ]; then
     TAG="v1.0.2"

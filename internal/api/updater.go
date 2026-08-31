@@ -20,43 +20,9 @@ import (
 // CheckAndSelfUpdate checks GitHub releases for the latest version and updates the binary in-place.
 func CheckAndSelfUpdate(ctx context.Context, currentVersion string) error {
 	repo := "arisolta/finst"
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	latestTag, err := fetchLatestReleaseTag(ctx, repo)
 	if err != nil {
-		return err
-	}
-	req.Header.Set("User-Agent", "finst-updater")
-
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to connect to GitHub: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		fmt.Printf("✓ finst %s is on the latest build.\n", currentVersion)
-		return nil
-	}
-	if resp.StatusCode == http.StatusForbidden {
-		fmt.Printf("✓ finst %s (GitHub API rate limit reached; try again later).\n", currentVersion)
-		return nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GitHub API returned status %s", resp.Status)
-	}
-
-	var rel struct {
-		TagName string `json:"tag_name"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return fmt.Errorf("failed to parse release info: %w", err)
-	}
-
-	latestTag := strings.TrimSpace(rel.TagName)
-	if latestTag == "" {
-		return fmt.Errorf("no valid tag found in latest release")
+		return fmt.Errorf("failed to check for updates: %w", err)
 	}
 
 	if latestTag == currentVersion {
@@ -94,7 +60,8 @@ func CheckAndSelfUpdate(ctx context.Context, currentVersion string) error {
 	}
 	dlReq.Header.Set("User-Agent", "finst-updater")
 
-	dlResp, err := client.Do(dlReq)
+	dlClient := &http.Client{Timeout: 30 * time.Second}
+	dlResp, err := dlClient.Do(dlReq)
 	if err != nil {
 		return fmt.Errorf("download failed: %w", err)
 	}
@@ -169,4 +136,61 @@ func CheckAndSelfUpdate(ctx context.Context, currentVersion string) error {
 
 	fmt.Printf("✓ Successfully updated finst to %s!\n", latestTag)
 	return nil
+}
+
+func fetchLatestReleaseTag(ctx context.Context, repo string) (string, error) {
+	// 1. Primary: Use GitHub web release redirect (zero rate limits)
+	webURL := fmt.Sprintf("https://github.com/%s/releases/latest", repo)
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, webURL, nil)
+	if err == nil {
+		req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; finst-updater)")
+		resp, rErr := client.Do(req)
+		if rErr == nil {
+			defer resp.Body.Close()
+			loc := resp.Header.Get("Location")
+			if loc != "" && strings.Contains(loc, "/tag/") {
+				parts := strings.Split(loc, "/tag/")
+				tag := strings.TrimSpace(parts[len(parts)-1])
+				tag = strings.Trim(tag, "\r\n/ ")
+				if tag != "" {
+					return tag, nil
+				}
+			}
+		}
+	}
+
+	// 2. Fallback: GitHub REST API
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
+	apiReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return "", err
+	}
+	apiReq.Header.Set("User-Agent", "finst-updater")
+
+	apiClient := &http.Client{Timeout: 10 * time.Second}
+	apiResp, err := apiClient.Do(apiReq)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to GitHub: %w", err)
+	}
+	defer apiResp.Body.Close()
+
+	if apiResp.StatusCode == http.StatusOK {
+		var rel struct {
+			TagName string `json:"tag_name"`
+		}
+		if jsonErr := json.NewDecoder(apiResp.Body).Decode(&rel); jsonErr == nil {
+			if tag := strings.TrimSpace(rel.TagName); tag != "" {
+				return tag, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("could not determine latest release version")
 }
