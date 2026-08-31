@@ -19,57 +19,50 @@ A high-performance, terminal-native, Bloomberg FA-style financial analysis CLI w
 
 ---
 
-## Installation & Setup
+## Installation
 
-Requires **Go 1.22+**.
+### 1. One-Line Install (No Go Required)
 
-### 1. Build from Source
-
+#### macOS & Linux (Apple Silicon M1/M2/M3/M4, Intel, Linux x86/ARM)
+Open your terminal and run:
 ```bash
-# Clone repository
+curl -fsSL https://raw.githubusercontent.com/arisolta/finst/main/install.sh | sh
+```
+
+#### Windows (PowerShell)
+Open PowerShell and run:
+```powershell
+irm https://raw.githubusercontent.com/arisolta/finst/main/install.ps1 | iex
+```
+
+---
+
+### 2. Updating `finst`
+Once installed, `finst` can update itself directly:
+```bash
+finst update
+```
+
+---
+
+### 3. Build from Source (Developers)
+
+Requires **Go 1.22+**:
+```bash
+# Clone and build
 git clone https://github.com/arisolta/finst.git
 cd finst
-
-# Build the executable
 go build -o finst ./cmd/finst
-```
 
-### 2. Install to PATH (Run from Anywhere)
-
-Choose one of the following methods to make `finst` globally accessible in your shell:
-
-#### Option A: Install to User Binary Path (Recommended for macOS / Linux)
-```bash
-# Ensure ~/.local/bin exists
-mkdir -p ~/.local/bin
-
-# Copy executable
-cp finst ~/.local/bin/finst
-```
-> *If `~/.local/bin` is not yet in your `$PATH`, add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.zshrc` or `~/.bashrc`.*
-
-#### Option B: Direct Go Install
-```bash
-go install ./cmd/finst
-```
-> *Installs `finst` directly to `$GOPATH/bin` (typically `~/go/bin`), which you can add to your `$PATH`.*
-
-#### Option C: System-Wide (macOS / Linux)
-```bash
-sudo cp finst /usr/local/bin/finst
-```
-
-#### Option D: Windows (PowerShell)
-```powershell
-go build -o finst.exe .\cmd\finst
-# Move finst.exe to a directory in your System PATH (e.g. C:\Windows\System32 or custom tools folder)
+# Move to your local PATH
+mkdir -p ~/.local/bin && cp finst ~/.local/bin/finst
 ```
 
 ---
 
 ## Quick Start & Usage
 
-Once in your `PATH`, run `finst` directly from any directory:
+Run `finst` directly from any terminal:
 
 ```bash
 # US Equities (audited SEC EDGAR XBRL data)
@@ -96,6 +89,7 @@ finst AAPL --view compact     # Condensed summary view with key multiples
 finst MSFT --export json      # Structured JSON output
 finst NVDA --export csv       # CSV table export
 finst BSX --refresh           # Bypass cache and force fresh data fetch
+finst update                  # Self-update to latest release
 finst --version               # Display CLI version
 ```
 
