@@ -84,14 +84,35 @@ finst HEN3.DE        # XETRA (Henkel)
 finst NESN.SW --currency USD
 finst 0700.HK --currency USD
 
-# Alternate Views & Formats
-finst AAPL --view compact     # Condensed summary view with key multiples
-finst MSFT --export json      # Structured JSON output
-finst NVDA --export csv       # CSV table export
-finst BSX --refresh           # Bypass cache and force fresh data fetch
-finst update                  # Self-update to latest release
-finst --version               # Display CLI version
+# Views & Options
+finst AAPL --view compact        # Condensed summary view with key multiples
+finst BSX --refresh              # Bypass cache and force fresh data fetch
+finst update                     # Self-update to latest release
+finst --version                  # Display CLI version
 ```
+
+---
+
+### Exporting Data (CSV & JSON)
+
+`finst` allows you to export complete 6-period financial datasets directly into files for spreadsheets or programmatic workflows using standard shell redirection (`>`):
+
+#### 1. Export to CSV (Excel / Apple Numbers / Google Sheets)
+```bash
+# Save to current folder
+finst AAPL --export csv > aapl.csv
+
+# Save directly to Desktop
+finst NVDA --export csv > ~/Desktop/nvda_financials.csv
+```
+> *Open the generated `.csv` file in Microsoft Excel, Apple Numbers, or import it into Google Sheets for custom modeling.*
+
+#### 2. Export to Structured JSON (Python, Pandas, APIs)
+```bash
+# Save formatted JSON dataset
+finst MSFT --export json > msft.json
+```
+> *Includes full nested metrics, capital structure, operating margins, returns, and forward consensus estimates.*
 
 ---
 
