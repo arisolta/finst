@@ -29,34 +29,26 @@ jobs:
           
           echo "Building darwin/arm64..."
           CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_darwin_arm64.tar.gz -C dist finst
-          rm dist/finst
+          (cd dist && tar -czf finst_darwin_arm64.tar.gz finst && rm finst)
           
           echo "Building darwin/amd64..."
           CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_darwin_amd64.tar.gz -C dist finst
-          rm dist/finst
+          (cd dist && tar -czf finst_darwin_amd64.tar.gz finst && rm finst)
           
           echo "Building linux/amd64..."
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_linux_amd64.tar.gz -C dist finst
-          rm dist/finst
+          (cd dist && tar -czf finst_linux_amd64.tar.gz finst && rm finst)
           
           echo "Building linux/arm64..."
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_linux_arm64.tar.gz -C dist finst
-          rm dist/finst
+          (cd dist && tar -czf finst_linux_arm64.tar.gz finst && rm finst)
           
           echo "Building windows/amd64..."
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o dist/finst.exe ./cmd/finst
-          python3 -c "import zipfile; zipfile.ZipFile('dist/finst_windows_amd64.zip', 'w', zipfile.ZIP_DEFLATED).write('dist/finst.exe', 'finst.exe')"
-          rm dist/finst.exe
+          (cd dist && python3 -c "import zipfile; zipfile.ZipFile('finst_windows_amd64.zip', 'w', zipfile.ZIP_DEFLATED).write('finst.exe', 'finst.exe')" && rm finst.exe)
           
           echo "Generating Checksums..."
-          cd dist
-          sha256sum finst_* > checksums.txt
-          cat checksums.txt
-          cd ..
+          (cd dist && sha256sum finst_* > checksums.txt && cat checksums.txt)
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
