@@ -44,16 +44,15 @@ func main() {
 		binPath := filepath.Join(distDir, binName)
 
 		fmt.Printf("==> Compiling for %s/%s...\n", t.GOOS, t.GOARCH)
-		cmd := exec.Command("go", "build", "-ldflags=-s -w", "-o", binPath, "./cmd/finst")
+		cmd := exec.Command("go", "build", "-ldflags", "-s -w", "-o", binPath, "./cmd/finst")
 		cmd.Env = append(os.Environ(),
 			"CGO_ENABLED=0",
 			"GOOS="+t.GOOS,
 			"GOARCH="+t.GOARCH,
 		)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "Build failed for %s/%s: %v\n", t.GOOS, t.GOARCH, err)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Build failed for %s/%s: %v\nOutput: %s\n", t.GOOS, t.GOARCH, err, string(out))
 			os.Exit(1)
 		}
 
