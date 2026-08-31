@@ -1,6 +1,6 @@
 module finst
 
-go 1.26.5
+go 1.22
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
