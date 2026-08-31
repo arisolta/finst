@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"finst/internal/model"
+	"github.com/arisolta/finst/internal/model"
 )
 
 // CalculateEnterpriseValue computes EV = Market Cap + Total Debt + Preferred Stock - Cash & Equivalents.

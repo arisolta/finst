@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"finst/internal/model"
+	"github.com/arisolta/finst/internal/model"
 )
 
 func TestSQLiteRepository(t *testing.T) {

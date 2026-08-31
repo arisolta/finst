@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"finst/internal/ui"
+	"github.com/arisolta/finst/internal/ui"
 )
 
 func TestMultiplesNegativeDenominators(t *testing.T) {

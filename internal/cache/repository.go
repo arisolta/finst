@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"finst/internal/model"
+	"github.com/arisolta/finst/internal/model"
 )
 
 const (

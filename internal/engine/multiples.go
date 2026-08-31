@@ -1,6 +1,6 @@
 package engine
 
-import "finst/internal/model"
+import "github.com/arisolta/finst/internal/model"
 
 // CalculatePE computes P/E ratio. Returns nil if net income / EPS <= 0.
 func CalculatePE(marketCap, netIncome, sharePrice, adjEPS float64) *float64 {

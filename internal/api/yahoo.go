@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"finst/internal/model"
+	"github.com/arisolta/finst/internal/model"
 )
 
 type YahooService struct {

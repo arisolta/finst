@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"finst/internal/model"
+	"github.com/arisolta/finst/internal/model"
 )
 
 func TestCAGRBoundsClamping(t *testing.T) {

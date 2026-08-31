@@ -1,4 +1,4 @@
-module finst
+module github.com/arisolta/finst
 
 go 1.25.0
 

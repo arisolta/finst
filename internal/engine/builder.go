@@ -4,8 +4,8 @@ import (
 	"context"
 	"math"
 
-	"finst/internal/api"
-	"finst/internal/model"
+	"github.com/arisolta/finst/internal/api"
+	"github.com/arisolta/finst/internal/model"
 )
 
 type DatasetBuilder struct {
