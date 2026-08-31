@@ -1,6 +1,6 @@
 module finst
 
-go 1.25.0
+go 1.24
 
 require modernc.org/sqlite v1.57.0
 
