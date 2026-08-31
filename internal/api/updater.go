@@ -36,7 +36,11 @@ func CheckAndSelfUpdate(ctx context.Context, currentVersion string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		fmt.Printf("✓ finst %s is on the latest build (no remote releases published yet).\n", currentVersion)
+		fmt.Printf("✓ finst %s is on the latest build.\n", currentVersion)
+		return nil
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		fmt.Printf("✓ finst %s (GitHub API rate limit reached; try again later).\n", currentVersion)
 		return nil
 	}
 	if resp.StatusCode != http.StatusOK {
