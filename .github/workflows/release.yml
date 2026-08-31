@@ -23,40 +23,8 @@ jobs:
           go-version: '1.22'
           cache: true
 
-      - name: Compile Cross-Platform Binaries
-        run: |
-          mkdir -p dist
-          VERSION=${GITHUB_REF_NAME}
-
-          echo "Building darwin/arm64..."
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_darwin_arm64.tar.gz -C dist finst
-          rm dist/finst
-
-          echo "Building darwin/amd64..."
-          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_darwin_amd64.tar.gz -C dist finst
-          rm dist/finst
-
-          echo "Building linux/amd64..."
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_linux_amd64.tar.gz -C dist finst
-          rm dist/finst
-
-          echo "Building linux/arm64..."
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/finst ./cmd/finst
-          tar -czf dist/finst_linux_arm64.tar.gz -C dist finst
-          rm dist/finst
-
-          echo "Building windows/amd64..."
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/finst.exe ./cmd/finst
-          zip -j dist/finst_windows_amd64.zip dist/finst.exe
-          rm dist/finst.exe
-
-          echo "Generating Checksums..."
-          cd dist
-          sha256sum finst_* > checksums.txt
-          cd ..
+      - name: Build Multi-Platform Release Archives
+        run: go run scripts/build_release.go
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
