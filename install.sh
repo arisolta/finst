@@ -45,7 +45,7 @@ printf "${BLUE}==>${RESET} Fetching latest release info from GitHub...\n"
 TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
 if [ -z "$TAG" ]; then
-    TAG="v1.0.0"
+    TAG="v1.0.1"
 fi
 
 FILENAME="finst_${OS}_${ARCH}.tar.gz"
