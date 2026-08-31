@@ -52,15 +52,15 @@ jobs:
           (cd dist && sha256sum finst_* > checksums.txt && cat checksums.txt)
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/finst_darwin_arm64.tar.gz
-            dist/finst_darwin_amd64.tar.gz
-            dist/finst_linux_amd64.tar.gz
-            dist/finst_linux_arm64.tar.gz
-            dist/finst_windows_amd64.zip
-            dist/checksums.txt
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/finst_darwin_arm64.tar.gz \
+            dist/finst_darwin_amd64.tar.gz \
+            dist/finst_linux_amd64.tar.gz \
+            dist/finst_linux_arm64.tar.gz \
+            dist/finst_windows_amd64.zip \
+            dist/checksums.txt \
+            --title "finst $GITHUB_REF_NAME" \
+            --generate-notes || gh release upload "$GITHUB_REF_NAME" dist/* --clobber
