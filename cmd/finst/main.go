@@ -16,7 +16,7 @@ import (
 	"github.com/arisolta/finst/internal/ui"
 )
 
-const Version = "v1.0.1"
+const Version = "v1.0.2"
 
 func main() {
 	var (
