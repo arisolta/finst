@@ -25,6 +25,7 @@ jobs:
 
       - name: Build Multi-Platform Release Archives
         run: |
+          sudo apt-get update -y && sudo apt-get install -y zip
           mkdir -p dist
           
           echo "Building darwin/arm64..."
@@ -45,7 +46,7 @@ jobs:
           
           echo "Building windows/amd64..."
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o dist/finst.exe ./cmd/finst
-          (cd dist && python3 -c "import zipfile; zipfile.ZipFile('finst_windows_amd64.zip', 'w', zipfile.ZIP_DEFLATED).write('finst.exe', 'finst.exe')" && rm finst.exe)
+          (cd dist && zip finst_windows_amd64.zip finst.exe && rm finst.exe)
           
           echo "Generating Checksums..."
           (cd dist && sha256sum finst_* > checksums.txt && cat checksums.txt)
