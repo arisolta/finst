@@ -44,12 +44,14 @@ esac
 printf "${BLUE}==>${RESET} Fetching latest release info from GitHub...\n"
 TAG=$(curl -sSL -I "https://github.com/${REPO}/releases/latest" 2>/dev/null | grep -i '^location:' | sed -E 's/.*\/tag\/([^\r\n]+).*/\1/' | tr -d '\r\n ' || true)
 
-if [ -z "$TAG" ]; then
-    TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | tr -d '\r\n ' || true)
+# Check highest git tag as primary source of latest version
+REMOTE_TAG=$(git ls-remote --tags "https://github.com/${REPO}.git" 2>/dev/null | grep -o 'refs/tags/v[0-9.]*' | sed 's|refs/tags/||' | sort -V | tail -n 1 || true)
+if [ -n "$REMOTE_TAG" ]; then
+    TAG="$REMOTE_TAG"
 fi
 
 if [ -z "$TAG" ]; then
-    TAG="v1.0.2"
+    TAG="v1.0.4"
 fi
 
 FILENAME="finst_${OS}_${ARCH}.tar.gz"
