@@ -99,6 +99,13 @@ func (f *Forecaster) ProjectForwardYear(
 			eps = consensus.EstEPS
 			if dilutedShares > 0 {
 				netIncome = eps * dilutedShares
+				if rev > 0 && ratios.WeightedNetM > 0 {
+					impliedMargin := netIncome / rev
+					if impliedMargin < 0.40*ratios.WeightedNetM || impliedMargin > 2.50*ratios.WeightedNetM {
+						netIncome = rev * ratios.WeightedNetM
+						eps = netIncome / dilutedShares
+					}
+				}
 			} else {
 				netIncome = rev * ratios.WeightedNetM
 			}

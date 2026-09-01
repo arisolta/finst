@@ -93,14 +93,34 @@ func (b *DatasetBuilder) BuildDataset(
 		}
 	}
 
-	if price.SharesOutstanding == 0 && len(hist) > 0 {
-		price.SharesOutstanding = hist[len(hist)-1].DilutedShares
-		if price.MarketCap == 0 && price.SharePrice > 0 {
-			price.MarketCap = price.SharePrice * price.SharesOutstanding
+	// Determine true consolidated total shares across all share classes from audited statements
+	effectiveShares := price.SharesOutstanding
+	for _, st := range hist {
+		if st.DilutedShares > effectiveShares {
+			effectiveShares = st.DilutedShares
 		}
 	}
-	if price.MarketCap == 0 && price.SharePrice > 0 && price.SharesOutstanding > 0 {
-		price.MarketCap = price.SharePrice * price.SharesOutstanding
+	if ltm.DilutedShares > effectiveShares {
+		effectiveShares = ltm.DilutedShares
+	}
+
+	if effectiveShares > 0 {
+		price.SharesOutstanding = effectiveShares
+		if price.SharePrice > 0 {
+			price.MarketCap = price.SharePrice * price.SharesOutstanding
+			// Recalculate live Enterprise Value with the unified market cap
+			var lastDebt, lastPref, lastCash float64
+			if ltm.TotalDebt > 0 || ltm.CashAndEquiv > 0 {
+				lastDebt = ltm.TotalDebt
+				lastPref = ltm.PreferredStock
+				lastCash = ltm.CashAndEquiv
+			} else if len(hist) > 0 {
+				lastDebt = hist[len(hist)-1].TotalDebt
+				lastPref = hist[len(hist)-1].PreferredStock
+				lastCash = hist[len(hist)-1].CashAndEquiv
+			}
+			price.EnterpriseValue = CalculateEnterpriseValue(price.MarketCap, lastDebt, lastPref, lastCash)
+		}
 	}
 
 	var periods []model.PeriodData
@@ -138,7 +158,7 @@ func (b *DatasetBuilder) BuildDataset(
 		baseYear = hist[len(hist)-1].FiscalYear
 	}
 
-	dilutedShares := price.SharesOutstanding
+	dilutedShares := effectiveShares
 	if dilutedShares == 0 && len(hist) > 0 {
 		dilutedShares = hist[len(hist)-1].DilutedShares
 	}
