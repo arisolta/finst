@@ -777,6 +777,9 @@ func (s *YahooService) FetchHistoricalMonthlyPrices(ctx context.Context, ticker 
 	var raw struct {
 		Chart struct {
 			Result []struct {
+				Meta struct {
+					Currency string `json:"currency"`
+				} `json:"meta"`
 				Timestamp  []int64 `json:"timestamp"`
 				Indicators struct {
 					Quote []struct {
@@ -796,14 +799,26 @@ func (s *YahooService) FetchHistoricalMonthlyPrices(ctx context.Context, ticker 
 		return nil, fmt.Errorf("empty chart history")
 	}
 
+	isMinorUnit := false
+	mCurr := strings.TrimSpace(res.Meta.Currency)
+	if mCurr == "GBp" || mCurr == "GBX" || mCurr == "ILA" || mCurr == "ZAc" || strings.EqualFold(mCurr, "GBp") || strings.EqualFold(mCurr, "GBX") {
+		isMinorUnit = true
+	} else if strings.HasSuffix(strings.ToUpper(ticker), ".L") {
+		isMinorUnit = true
+	}
+
 	closes := res.Indicators.Quote[0].Close
 	var points []HistoricalPricePoint
 	for i, ts := range res.Timestamp {
 		if i < len(closes) && closes[i] != nil && *closes[i] > 0 {
+			price := *closes[i]
+			if isMinorUnit {
+				price /= 100.0
+			}
 			t := time.Unix(ts, 0).UTC()
 			points = append(points, HistoricalPricePoint{
 				Date:  t,
-				Close: *closes[i],
+				Close: price,
 			})
 		}
 	}

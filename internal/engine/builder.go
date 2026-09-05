@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"math"
+	"strings"
 
 	"github.com/arisolta/finst/internal/api"
 	"github.com/arisolta/finst/internal/model"
@@ -79,9 +80,13 @@ func (b *DatasetBuilder) BuildDataset(
 	ltm := norm.LTM
 
 	// Normalize historical share prices from trading currency (origPriceCurr) to display currency
-	if origPriceCurr != displayCurr && b.normalizer.fxService != nil {
-		for i := range hist {
-			if hist[i].HistoricalPrice > 0 {
+	for i := range hist {
+		if hist[i].HistoricalPrice > 0 {
+			// Guard against pence/minor unit inflation if cached from older versions
+			if (origPriceCurr == "GBP" || strings.HasSuffix(strings.ToUpper(company.Ticker), ".L")) && hist[i].HistoricalPrice > 500 {
+				hist[i].HistoricalPrice /= 100.0
+			}
+			if origPriceCurr != displayCurr && b.normalizer.fxService != nil {
 				avgRate, err := b.normalizer.fxService.GetAverageRate(ctx, origPriceCurr, displayCurr, hist[i].FiscalYear)
 				if err != nil || avgRate <= 0 {
 					avgRate, _ = b.normalizer.fxService.GetSpotRate(ctx, origPriceCurr, displayCurr)
@@ -142,6 +147,19 @@ func (b *DatasetBuilder) BuildDataset(
 	}
 
 	// 2. Build LTM Period
+	if ltm.GrossProfit == 0 && ltm.Revenue > 0 && len(hist) > 0 {
+		var totalRev, totalGP float64
+		for _, h := range hist {
+			if h.GrossProfit > 0 && h.Revenue > 0 {
+				totalRev += h.Revenue
+				totalGP += h.GrossProfit
+			}
+		}
+		if totalRev > 0 && totalGP > 0 {
+			ltm.GrossProfit = ltm.Revenue * (totalGP / totalRev)
+		}
+	}
+
 	var ltmPrevRev, ltmPrevEPS float64
 	if len(hist) > 0 {
 		ltmPrevRev = hist[len(hist)-1].Revenue
