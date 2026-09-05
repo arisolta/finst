@@ -415,7 +415,7 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 		"trailingDilutedAverageShares", "trailingOrdinarySharesNumber",
 		"trailingCashDividendsPaid",
 		"quarterlyTotalRevenue", "quarterlyCostOfRevenue", "quarterlyGrossProfit", "quarterlyOperatingIncome",
-		"quarterlyNetIncomeContinuousOperations", "quarterlyOperatingCashFlow", "quarterlyCapitalExpenditure",
+		"quarterlyNetIncomeContinuousOperations", "quarterlyNetIncome", "quarterlyOperatingCashFlow", "quarterlyCapitalExpenditure",
 		"quarterlyReconciledDepreciation", "quarterlyDilutedEPS", "quarterlyEndCashPosition", "quarterlyTotalDebt",
 		"quarterlyTotalStockholderEquity", "quarterlyDilutedAverageShares", "quarterlyOrdinarySharesNumber",
 		"quarterlyCashDividendsPaid",
@@ -547,7 +547,7 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 				st.OperatingIncome = numVal
 			case "annualReconciledDepreciation", "quarterlyReconciledDepreciation", "trailingReconciledDepreciation":
 				st.DepreciationAmortization = numVal
-			case "annualNetIncomeContinuousOperations", "annualNetIncome", "quarterlyNetIncomeContinuousOperations", "trailingNetIncomeContinuousOperations":
+			case "annualNetIncomeContinuousOperations", "annualNetIncome", "quarterlyNetIncomeContinuousOperations", "quarterlyNetIncome", "trailingNetIncomeContinuousOperations", "trailingNetIncome":
 				st.NetIncome = numVal
 			case "annualDilutedEPS", "quarterlyDilutedEPS", "trailingDilutedEPS":
 				st.AdjEPS = numVal
