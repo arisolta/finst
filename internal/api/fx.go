@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -69,25 +70,92 @@ func (s *FXService) GetSpotRate(ctx context.Context, fromCurr, toCurr string) (f
 		data, err = s.client.Get(ctx, url, opts)
 	}
 
+	var resp FrankfurterLatestResponse
+	var frankfurterSuccess bool
+	if err == nil {
+		if jsonErr := json.Unmarshal(data, &resp); jsonErr == nil {
+			if rate, ok := resp.Rates[to]; ok && rate > 0 {
+				s.cacheLock.Lock()
+				s.spotCache[key] = rate
+				s.cacheLock.Unlock()
+				return rate, nil
+			}
+		}
+	}
+	_ = frankfurterSuccess
+
+	// Fallback to Yahoo Finance FX for exotic/non-ECB pairs (e.g. KZT, TWD, ARS, SAR)
+	yRate, yErr := s.fetchYahooSpotRate(ctx, from, to)
+	if yErr == nil && yRate > 0 {
+		s.cacheLock.Lock()
+		s.spotCache[key] = yRate
+		s.cacheLock.Unlock()
+		return yRate, nil
+	}
+
 	if err != nil {
 		return 1.0, fmt.Errorf("failed to fetch spot FX rate %s -> %s: %w", from, to, err)
 	}
+	return 1.0, fmt.Errorf("exchange rate %s -> %s not available in response", from, to)
+}
 
-	var resp FrankfurterLatestResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return 1.0, fmt.Errorf("failed to parse spot FX json: %w", err)
+func (s *FXService) fetchYahooSpotRate(ctx context.Context, from, to string) (float64, error) {
+	opts := &RequestOptions{
+		Headers: map[string]string{
+			"User-Agent": WebUserAgent,
+			"Accept":     "*/*",
+			"Referer":    "https://finance.yahoo.com/",
+		},
+		Timeout: 10 * time.Second,
+		Retries: 2,
 	}
 
-	rate, ok := resp.Rates[to]
-	if !ok || rate <= 0 {
-		return 1.0, fmt.Errorf("exchange rate %s -> %s not available in response", from, to)
+	// 1. Direct pair e.g. USDKZT=X
+	pair := fmt.Sprintf("%s%s=X", from, to)
+	chartURL := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s?range=1d&interval=1d", url.PathEscape(pair))
+	if data, err := s.client.Get(ctx, chartURL, opts); err == nil {
+		var raw struct {
+			Chart struct {
+				Result []struct {
+					Meta struct {
+						RegularMarketPrice float64 `json:"regularMarketPrice"`
+					} `json:"meta"`
+				} `json:"result"`
+			} `json:"chart"`
+		}
+		if json.Unmarshal(data, &raw) == nil && len(raw.Chart.Result) > 0 && raw.Chart.Result[0].Meta.RegularMarketPrice > 0 {
+			return raw.Chart.Result[0].Meta.RegularMarketPrice, nil
+		}
 	}
 
-	s.cacheLock.Lock()
-	s.spotCache[key] = rate
-	s.cacheLock.Unlock()
+	// 2. Inverse pair e.g. KZTUSD=X
+	invPair := fmt.Sprintf("%s%s=X", to, from)
+	invURL := fmt.Sprintf("https://query2.finance.yahoo.com/v8/finance/chart/%s?range=1d&interval=1d", url.PathEscape(invPair))
+	if data, err := s.client.Get(ctx, invURL, opts); err == nil {
+		var raw struct {
+			Chart struct {
+				Result []struct {
+					Meta struct {
+						RegularMarketPrice float64 `json:"regularMarketPrice"`
+					} `json:"meta"`
+				} `json:"result"`
+			} `json:"chart"`
+		}
+		if json.Unmarshal(data, &raw) == nil && len(raw.Chart.Result) > 0 && raw.Chart.Result[0].Meta.RegularMarketPrice > 0 {
+			return 1.0 / raw.Chart.Result[0].Meta.RegularMarketPrice, nil
+		}
+	}
 
-	return rate, nil
+	// 3. Cross rate via USD
+	if from != "USD" && to != "USD" {
+		rateFromUSD, err1 := s.fetchYahooSpotRate(ctx, "USD", from)
+		rateToUSD, err2 := s.fetchYahooSpotRate(ctx, "USD", to)
+		if err1 == nil && err2 == nil && rateFromUSD > 0 && rateToUSD > 0 {
+			return rateToUSD / rateFromUSD, nil
+		}
+	}
+
+	return 0, fmt.Errorf("yahoo fx rate not available for %s -> %s", from, to)
 }
 
 // GetAverageRate returns the historical average exchange rate for a given fiscal year.

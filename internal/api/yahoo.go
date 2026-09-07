@@ -402,20 +402,21 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 	types := []string{
 		"annualTotalRevenue", "annualCostOfRevenue", "annualGrossProfit", "annualOperatingIncome",
 		"annualOperatingExpense", "annualNetIncomeContinuousOperations", "annualNetIncome", "annualDilutedEPS",
-		"annualOperatingCashFlow", "annualCapitalExpenditure", "annualEndCashPosition", "annualCashAndCashEquivalents",
+		"annualOperatingCashFlow", "annualCapitalExpenditure", "annualNetOtherInvestingChanges", "annualInvestingCashFlow", "annualEndCashPosition", "annualCashAndCashEquivalents",
 		"annualTotalDebt", "annualTotalStockholderEquity", "annualStockholdersEquity", "annualReconciledDepreciation",
 		"annualNormalizedEBITDA", "annualEBITDA", "annualFreeCashFlow", "annualPreferredStock",
 		"annualDilutedAverageShares", "annualOrdinarySharesNumber", "annualBasicAverageShares",
 		"annualCashDividendsPaid",
 		"trailingTotalRevenue", "trailingCostOfRevenue", "trailingGrossProfit", "trailingOperatingIncome",
 		"trailingOperatingExpense", "trailingNetIncomeContinuousOperations", "trailingNetIncome", "trailingDilutedEPS",
-		"trailingOperatingCashFlow", "trailingCapitalExpenditure", "trailingEndCashPosition", "trailingCashAndCashEquivalents",
+		"trailingOperatingCashFlow", "trailingCapitalExpenditure", "trailingNetOtherInvestingChanges", "trailingInvestingCashFlow", "trailingEndCashPosition", "trailingCashAndCashEquivalents",
 		"trailingTotalDebt", "trailingTotalStockholderEquity", "trailingStockholdersEquity", "trailingReconciledDepreciation",
 		"trailingNormalizedEBITDA", "trailingEBITDA", "trailingFreeCashFlow",
 		"trailingDilutedAverageShares", "trailingOrdinarySharesNumber",
 		"trailingCashDividendsPaid",
 		"quarterlyTotalRevenue", "quarterlyCostOfRevenue", "quarterlyGrossProfit", "quarterlyOperatingIncome",
 		"quarterlyNetIncomeContinuousOperations", "quarterlyNetIncome", "quarterlyOperatingCashFlow", "quarterlyCapitalExpenditure",
+		"quarterlyNetOtherInvestingChanges", "quarterlyInvestingCashFlow",
 		"quarterlyReconciledDepreciation", "quarterlyDilutedEPS", "quarterlyEndCashPosition", "quarterlyTotalDebt",
 		"quarterlyTotalStockholderEquity", "quarterlyDilutedAverageShares", "quarterlyOrdinarySharesNumber",
 		"quarterlyCashDividendsPaid",
@@ -555,6 +556,11 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 				st.OperatingCashFlow = numVal
 			case "annualCapitalExpenditure", "quarterlyCapitalExpenditure", "trailingCapitalExpenditure":
 				st.CapEx = numVal
+			case "annualNetOtherInvestingChanges", "trailingNetOtherInvestingChanges", "quarterlyNetOtherInvestingChanges",
+				"annualInvestingCashFlow", "trailingInvestingCashFlow", "quarterlyInvestingCashFlow":
+				if st.CapEx == 0 && numVal != 0 {
+					st.CapEx = numVal
+				}
 			case "annualEndCashPosition", "annualCashAndCashEquivalents", "quarterlyEndCashPosition", "trailingEndCashPosition":
 				st.CashAndEquiv = numVal
 			case "annualTotalDebt", "quarterlyTotalDebt", "trailingTotalDebt":
