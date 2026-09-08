@@ -100,6 +100,8 @@ type YahooAPIError struct {
 }
 
 type YahooQuoteSummaryResult struct {
+	Price                            YahooPrice                            `json:"price"`
+	SummaryDetail                    YahooSummaryDetail                    `json:"summaryDetail"`
 	AssetProfile                     YahooAssetProfile                     `json:"assetProfile"`
 	FinancialData                    YahooFinancialData                    `json:"financialData"`
 	DefaultKeyStatistics             YahooDefaultKeyStatistics             `json:"defaultKeyStatistics"`
@@ -109,6 +111,18 @@ type YahooQuoteSummaryResult struct {
 	IncomeStatementHistoryQuarterly  YahooIncomeStatementHistoryQuarterly  `json:"incomeStatementHistoryQuarterly"`
 	CashflowStatementHistoryQuarterly YahooCashflowStatementHistoryQuarterly `json:"cashflowStatementHistoryQuarterly"`
 	EarningsTrend                    YahooEarningsTrend                    `json:"earningsTrend"`
+}
+
+type YahooPrice struct {
+	MarketCap          YahooRawFmt `json:"marketCap"`
+	RegularMarketPrice YahooRawFmt `json:"regularMarketPrice"`
+}
+
+type YahooSummaryDetail struct {
+	MarketCap     YahooRawFmt `json:"marketCap"`
+	TrailingPE    YahooRawFmt `json:"trailingPE"`
+	ForwardPE     YahooRawFmt `json:"forwardPE"`
+	DividendYield YahooRawFmt `json:"dividendYield"`
 }
 
 type YahooRawFmt struct {
@@ -139,11 +153,12 @@ type YahooFinancialData struct {
 }
 
 type YahooDefaultKeyStatistics struct {
-	SharesOutstanding YahooRawFmt `json:"sharesOutstanding"`
-	EnterpriseValue   YahooRawFmt `json:"enterpriseValue"`
-	PriceToBook       YahooRawFmt `json:"priceToBook"`
-	ForwardPE         YahooRawFmt `json:"forwardPE"`
-	TrailingPE        YahooRawFmt `json:"trailingPE"`
+	SharesOutstanding        YahooRawFmt `json:"sharesOutstanding"`
+	ImpliedSharesOutstanding YahooRawFmt `json:"impliedSharesOutstanding"`
+	EnterpriseValue          YahooRawFmt `json:"enterpriseValue"`
+	PriceToBook              YahooRawFmt `json:"priceToBook"`
+	ForwardPE                YahooRawFmt `json:"forwardPE"`
+	TrailingPE               YahooRawFmt `json:"trailingPE"`
 }
 
 type YahooIncomeStatementHistory struct {
@@ -247,7 +262,7 @@ func (s *YahooService) FetchQuoteSummary(ctx context.Context, ticker string) (*Y
 		// Log or proceed without crumb to try chart endpoint
 	}
 
-	modules := "financialData,defaultKeyStatistics,assetProfile,incomeStatementHistory,balanceSheetHistory,cashflowStatementHistory,incomeStatementHistoryQuarterly,cashflowStatementHistoryQuarterly,earningsTrend"
+	modules := "price,summaryDetail,financialData,defaultKeyStatistics,assetProfile,incomeStatementHistory,balanceSheetHistory,cashflowStatementHistory,incomeStatementHistoryQuarterly,cashflowStatementHistoryQuarterly,earningsTrend"
 	summaryURL := fmt.Sprintf("https://query2.finance.yahoo.com/v10/finance/quoteSummary/%s?crumb=%s&modules=%s",
 		url.PathEscape(ticker), url.QueryEscape(crumb), modules)
 
@@ -359,16 +374,25 @@ func (s *YahooService) ExtractPriceValuation(ticker string, res *YahooQuoteSumma
 	}
 
 	if res != nil {
-		if res.FinancialData.CurrentPrice.Raw > 0 {
+		if res.Price.RegularMarketPrice.Raw > 0 {
+			pv.SharePrice = res.Price.RegularMarketPrice.Raw
+		} else if res.FinancialData.CurrentPrice.Raw > 0 {
 			pv.SharePrice = res.FinancialData.CurrentPrice.Raw
+		}
+		if res.Price.MarketCap.Raw > 0 {
+			pv.MarketCap = res.Price.MarketCap.Raw
+		} else if res.SummaryDetail.MarketCap.Raw > 0 {
+			pv.MarketCap = res.SummaryDetail.MarketCap.Raw
 		}
 		if res.DefaultKeyStatistics.SharesOutstanding.Raw > 0 {
 			pv.SharesOutstanding = res.DefaultKeyStatistics.SharesOutstanding.Raw
+		} else if res.DefaultKeyStatistics.ImpliedSharesOutstanding.Raw > 0 {
+			pv.SharesOutstanding = res.DefaultKeyStatistics.ImpliedSharesOutstanding.Raw
 		}
-		if res.FinancialData.EnterpriseValue.Raw > 0 {
-			pv.EnterpriseValue = res.FinancialData.EnterpriseValue.Raw
-		} else if res.DefaultKeyStatistics.EnterpriseValue.Raw > 0 {
+		if res.DefaultKeyStatistics.EnterpriseValue.Raw > 0 {
 			pv.EnterpriseValue = res.DefaultKeyStatistics.EnterpriseValue.Raw
+		} else if res.FinancialData.EnterpriseValue.Raw > 0 {
+			pv.EnterpriseValue = res.FinancialData.EnterpriseValue.Raw
 		}
 	}
 

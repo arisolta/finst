@@ -43,3 +43,37 @@ func TestEdgarAMZN(t *testing.T) {
 		t.Errorf("expected at least 3 statements, got %d", len(statements))
 	}
 }
+
+func TestEdgarGRAB(t *testing.T) {
+	client := NewClient()
+	service := NewEdgarService(client)
+	ctx := context.Background()
+
+	if testing.Short() {
+		t.Skip("skipping network integration test in short mode")
+	}
+
+	cik, title, err := service.ResolveTicker(ctx, "GRAB")
+	if err != nil || cik == "" {
+		t.Skipf("skipping live SEC network test: %v", err)
+		return
+	}
+	t.Logf("GRAB resolved: CIK=%s, title=%s", cik, title)
+
+	facts, err := service.FetchCompanyFacts(ctx, cik)
+	if err != nil {
+		t.Skipf("skipping live SEC facts fetch: %v", err)
+		return
+	}
+
+	statements, err := service.ExtractStatements(facts, "GRAB")
+	if err != nil {
+		t.Fatalf("failed to extract statements: %v", err)
+	}
+
+	if len(statements) < 3 {
+		t.Errorf("expected at least 3 statements for GRAB, got %d", len(statements))
+	}
+}
+
+

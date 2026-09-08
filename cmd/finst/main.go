@@ -16,7 +16,7 @@ import (
 	"github.com/arisolta/finst/internal/ui"
 )
 
-const Version = "v1.0.7"
+const Version = "v1.0.8"
 
 func main() {
 	var (
@@ -173,6 +173,10 @@ func main() {
 				if err == nil && cik != "" {
 					facts, fErr := edgarService.FetchCompanyFacts(ctx, cik)
 					if fErr == nil && facts != nil {
+						std := "US-GAAP / SEC EDGAR"
+						if len(facts.Facts.IFRS) > len(facts.Facts.USGAAP) {
+							std = "IFRS / SEC EDGAR"
+						}
 						sts, pErr := edgarService.ExtractStatements(facts, ticker)
 						if pErr == nil && len(sts) > 0 {
 							edgarStatements = sts
@@ -183,9 +187,11 @@ func main() {
 									Name:              title,
 									Exchange:          "US",
 									Currency:          "USD",
-									ReportingStandard: "US-GAAP / SEC EDGAR",
+									ReportingStandard: std,
 									UpdatedAt:         time.Now(),
 								}
+							} else {
+								company.ReportingStandard = std
 							}
 						}
 					}
@@ -249,6 +255,9 @@ func main() {
 			}
 			if yahooCompany.Exchange != "" {
 				company.Exchange = yahooCompany.Exchange
+			}
+			if yahooCompany.Currency != "" {
+				company.Currency = yahooCompany.Currency
 			}
 		}
 
@@ -345,6 +354,20 @@ func main() {
 
 		if completeEdgarAnnuals >= 3 {
 			statements = edgarStatements
+			// Enrich with Yahoo quarterly & LTM statements if EDGAR lacks quarterly reporting (common for Foreign Private Issuers on 20-F/6-K)
+			var edgarQuarterlies int
+			for _, s := range edgarStatements {
+				if s.PeriodType == model.PeriodQuarterly && s.Revenue > 0 {
+					edgarQuarterlies++
+				}
+			}
+			if edgarQuarterlies < 4 {
+				for _, ys := range yahooStatements {
+					if (ys.PeriodType == model.PeriodQuarterly && ys.Revenue > 0) || ys.PeriodType == "LTM" || ys.PeriodType == "TTM" {
+						statements = append(statements, ys)
+					}
+				}
+			}
 		} else if completeYahooAnnuals >= completeEdgarAnnuals && completeYahooAnnuals > 0 {
 			statements = yahooStatements
 		} else if len(edgarStatements) > 0 {

@@ -86,13 +86,19 @@ func BuildHistoricalPeriodData(
 		sharePrice = st.HistoricalPrice
 	}
 
-	if shares > 0 && sharePrice > 0 {
+	if isLTM && currentPrice.MarketCap > 0 {
+		mktCap = currentPrice.MarketCap
+	} else if shares > 0 && sharePrice > 0 {
 		mktCap = sharePrice * shares
 	} else if currentPrice.MarketCap > 0 {
 		mktCap = currentPrice.MarketCap
 	}
 
-	ev = CalculateEnterpriseValue(mktCap, debt, pref, cash)
+	if isLTM && currentPrice.EnterpriseValue > 0 {
+		ev = currentPrice.EnterpriseValue
+	} else {
+		ev = CalculateEnterpriseValue(mktCap, debt, pref, cash)
+	}
 
 	// Percentages & Margins
 	var yoyGrowth, epsGrowth, gmPct, ebitdaPct, ebitPct, netPct, fcfConvPct *float64

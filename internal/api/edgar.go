@@ -100,7 +100,7 @@ func (s *EdgarService) ResolveTicker(ctx context.Context, ticker string) (string
 
 // SEC Facts Data Structure
 type SECCompanyFacts struct {
-	CIK        int    `json:"cik"`
+	CIK        any    `json:"cik"`
 	EntityName string `json:"entityName"`
 	Facts      struct {
 		Dei    map[string]SECFactConcept `json:"dei"`
@@ -157,12 +157,24 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 		return nil, fmt.Errorf("empty SEC facts")
 	}
 
-	gaap := facts.Facts.USGAAP
-	if len(gaap) == 0 {
-		gaap = facts.Facts.IFRS
-		if len(gaap) == 0 {
-			return nil, fmt.Errorf("no us-gaap or ifrs-full facts found in SEC filing")
+	gaap := make(map[string]SECFactConcept)
+	if len(facts.Facts.USGAAP) >= len(facts.Facts.IFRS) {
+		for k, v := range facts.Facts.IFRS {
+			gaap[k] = v
 		}
+		for k, v := range facts.Facts.USGAAP {
+			gaap[k] = v
+		}
+	} else {
+		for k, v := range facts.Facts.USGAAP {
+			gaap[k] = v
+		}
+		for k, v := range facts.Facts.IFRS {
+			gaap[k] = v
+		}
+	}
+	if len(gaap) == 0 {
+		return nil, fmt.Errorf("no us-gaap or ifrs-full facts found in SEC filing")
 	}
 
 	type StKey struct {
@@ -218,7 +230,7 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 		"DepreciationAndAmortisationExpense", "DepreciationAmortisationAndImpairmentLossesExcludingImpairmentLossesReversed",
 		"Depreciation", "AmortizationOfIntangibleAssets", "CapitalLeasesIncomeStatementAmortizationExpense",
 	}
-	conceptNet := []string{"NetIncomeLoss", "ProfitLoss", "ProfitLossAttributableToOwnersOfParent"}
+	conceptNet := []string{"NetIncomeLoss", "ProfitLossAttributableToOwnersOfParent", "ProfitLoss"}
 	conceptCFO := []string{"NetCashProvidedByUsedInOperatingActivities", "CashFlowsFromUsedInOperatingActivities"}
 	conceptCapEx := []string{
 		"PaymentsToAcquirePropertyPlantAndEquipment", "PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities",

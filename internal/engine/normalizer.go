@@ -99,16 +99,22 @@ func (n *StatementNormalizer) NormalizeStatements(
 }
 
 func (n *StatementNormalizer) computeLTM(quarters []model.FinancialStatement, annuals []model.FinancialStatement) model.FinancialStatement {
-	if len(quarters) >= 4 {
+	var validQuarters []model.FinancialStatement
+	for _, q := range quarters {
+		if q.Revenue > 0 {
+			validQuarters = append(validQuarters, q)
+		}
+	}
+	if len(validQuarters) >= 4 {
 		// Sort quarterlies by end date or fiscal year/period
-		sort.Slice(quarters, func(i, j int) bool {
-			if quarters[i].FiscalYear != quarters[j].FiscalYear {
-				return quarters[i].FiscalYear < quarters[j].FiscalYear
+		sort.Slice(validQuarters, func(i, j int) bool {
+			if validQuarters[i].FiscalYear != validQuarters[j].FiscalYear {
+				return validQuarters[i].FiscalYear < validQuarters[j].FiscalYear
 			}
-			return quarters[i].FiscalPeriod < quarters[j].FiscalPeriod
+			return validQuarters[i].FiscalPeriod < validQuarters[j].FiscalPeriod
 		})
 
-		last4 := quarters[len(quarters)-4:]
+		last4 := validQuarters[len(validQuarters)-4:]
 		latest := last4[3]
 
 		var ltm model.FinancialStatement

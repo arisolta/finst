@@ -110,22 +110,27 @@ func (b *DatasetBuilder) BuildDataset(
 	}
 
 	if effectiveShares > 0 {
-		price.SharesOutstanding = effectiveShares
-		if price.SharePrice > 0 {
-			price.MarketCap = price.SharePrice * price.SharesOutstanding
-			// Recalculate live Enterprise Value with the unified market cap
-			var lastDebt, lastPref, lastCash float64
-			if ltm.TotalDebt > 0 || ltm.CashAndEquiv > 0 {
-				lastDebt = ltm.TotalDebt
-				lastPref = ltm.PreferredStock
-				lastCash = ltm.CashAndEquiv
-			} else if len(hist) > 0 {
-				lastDebt = hist[len(hist)-1].TotalDebt
-				lastPref = hist[len(hist)-1].PreferredStock
-				lastCash = hist[len(hist)-1].CashAndEquiv
-			}
-			price.EnterpriseValue = CalculateEnterpriseValue(price.MarketCap, lastDebt, lastPref, lastCash)
+		if price.SharesOutstanding == 0 {
+			price.SharesOutstanding = effectiveShares
 		}
+		if price.MarketCap == 0 && price.SharePrice > 0 {
+			price.MarketCap = price.SharePrice * price.SharesOutstanding
+		}
+	}
+
+	if price.EnterpriseValue == 0 && price.MarketCap > 0 {
+		// Recalculate live Enterprise Value if not provided by source
+		var lastDebt, lastPref, lastCash float64
+		if ltm.TotalDebt > 0 || ltm.CashAndEquiv > 0 {
+			lastDebt = ltm.TotalDebt
+			lastPref = ltm.PreferredStock
+			lastCash = ltm.CashAndEquiv
+		} else if len(hist) > 0 {
+			lastDebt = hist[len(hist)-1].TotalDebt
+			lastPref = hist[len(hist)-1].PreferredStock
+			lastCash = hist[len(hist)-1].CashAndEquiv
+		}
+		price.EnterpriseValue = CalculateEnterpriseValue(price.MarketCap, lastDebt, lastPref, lastCash)
 	}
 
 	var periods []model.PeriodData
@@ -170,6 +175,20 @@ func (b *DatasetBuilder) BuildDataset(
 
 	// 3. Build Forward Projections (T+1, T+2, T+3)
 	ratios := b.forecaster.Compute3YearRatios(hist)
+	if ltm.Revenue > 0 {
+		ltmGrossM := ltm.GrossProfit / ltm.Revenue
+		ltmEBITDAM := (ltm.OperatingIncome + ltm.DepreciationAmortization) / ltm.Revenue
+		ltmNetM := ltm.NetIncome / ltm.Revenue
+		if ltmGrossM > ratios.WeightedGrossM {
+			ratios.WeightedGrossM = 0.60*ltmGrossM + 0.40*ratios.WeightedGrossM
+		}
+		if ltmEBITDAM > ratios.WeightedEBITDAM {
+			ratios.WeightedEBITDAM = 0.60*ltmEBITDAM + 0.40*ratios.WeightedEBITDAM
+		}
+		if ltmNetM > ratios.WeightedNetM {
+			ratios.WeightedNetM = 0.60*ltmNetM + 0.40*ratios.WeightedNetM
+		}
+	}
 
 	baseYear := 2025
 	if len(hist) > 0 {

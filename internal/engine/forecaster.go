@@ -82,7 +82,7 @@ func (f *Forecaster) ProjectForwardYear(
 ) model.PeriodData {
 	isConsensus := (consensus != nil && (consensus.EstRevenue > 0 || consensus.EstEPS != 0))
 
-	var rev, grossProfit, ebitda, netIncome, eps, capex, da, cfo, fcf float64
+	var rev, grossProfit, ebitda, ebit, netIncome, eps, capex, da, cfo, fcf float64
 	sourceLabel := "Proj"
 	periodType := model.PeriodTypeProjection
 
@@ -99,11 +99,18 @@ func (f *Forecaster) ProjectForwardYear(
 			eps = consensus.EstEPS
 			if dilutedShares > 0 {
 				netIncome = eps * dilutedShares
-				if rev > 0 && ratios.WeightedNetM > 0 {
+				if rev > 0 {
 					impliedMargin := netIncome / rev
-					if impliedMargin < 0.40*ratios.WeightedNetM || impliedMargin > 2.50*ratios.WeightedNetM {
-						netIncome = rev * ratios.WeightedNetM
-						eps = netIncome / dilutedShares
+					// Detect float distortion or unit mismatch (e.g. 1000x share class mismatch where implied margin > 85%)
+					isDistorted := math.Abs(impliedMargin) > 0.85
+					if ratios.WeightedNetM > 0.05 && (impliedMargin < 0.10*ratios.WeightedNetM || impliedMargin > 10.0*ratios.WeightedNetM) {
+						isDistorted = true
+					}
+					if isDistorted {
+						if ratios.WeightedNetM > 0 {
+							netIncome = rev * ratios.WeightedNetM
+							eps = netIncome / dilutedShares
+						}
 					}
 				}
 			} else {
@@ -220,8 +227,18 @@ func (f *Forecaster) ProjectForwardYear(
 	}
 
 	gmPct := (grossProfit / rev) * 100
+	ebitCandidate := ebitda - da
+	if netIncome > 0 && ebitCandidate < netIncome {
+		impliedEBIT := netIncome / 0.85
+		if grossProfit > 0 && impliedEBIT > grossProfit {
+			impliedEBIT = math.Max(netIncome, grossProfit*0.75)
+		}
+		ebit = impliedEBIT
+		ebitda = ebit + da
+	} else {
+		ebit = ebitCandidate
+	}
 	ebitdaPct := (ebitda / rev) * 100
-	ebit := ebitda - da
 	ebitPct := (ebit / rev) * 100
 	netPct := (netIncome / rev) * 100
 	var fcfConvPct *float64
