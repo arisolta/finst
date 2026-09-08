@@ -25,8 +25,13 @@ func CheckAndSelfUpdate(ctx context.Context, currentVersion string) error {
 		return fmt.Errorf("failed to check for updates: %w", err)
 	}
 
-	if latestTag == currentVersion {
-		fmt.Printf("✓ finst is already up to date (%s).\n", currentVersion)
+	cmp := compareSemver(latestTag, currentVersion)
+	if cmp <= 0 {
+		if cmp == 0 {
+			fmt.Printf("✓ finst is already up to date (%s).\n", currentVersion)
+		} else {
+			fmt.Printf("✓ finst (%s) is newer than the latest published release (%s).\n", currentVersion, latestTag)
+		}
 		return nil
 	}
 
@@ -139,7 +144,29 @@ func CheckAndSelfUpdate(ctx context.Context, currentVersion string) error {
 }
 
 func fetchLatestReleaseTag(ctx context.Context, repo string) (string, error) {
-	// 1. Primary: Use GitHub web release redirect (zero rate limits)
+	// 1. Primary: GitHub REST API (always returns the exact latest release without CDN caching delays)
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
+	apiReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err == nil {
+		apiReq.Header.Set("User-Agent", "finst-updater")
+		apiClient := &http.Client{Timeout: 10 * time.Second}
+		apiResp, rErr := apiClient.Do(apiReq)
+		if rErr == nil {
+			defer apiResp.Body.Close()
+			if apiResp.StatusCode == http.StatusOK {
+				var rel struct {
+					TagName string `json:"tag_name"`
+				}
+				if jsonErr := json.NewDecoder(apiResp.Body).Decode(&rel); jsonErr == nil {
+					if tag := strings.TrimSpace(rel.TagName); tag != "" {
+						return tag, nil
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Fallback: GitHub web release redirect (in case API is unavailable or rate-limited)
 	webURL := fmt.Sprintf("https://github.com/%s/releases/latest", repo)
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -166,31 +193,34 @@ func fetchLatestReleaseTag(ctx context.Context, repo string) (string, error) {
 		}
 	}
 
-	// 2. Fallback: GitHub REST API
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
-	apiReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return "", err
-	}
-	apiReq.Header.Set("User-Agent", "finst-updater")
-
-	apiClient := &http.Client{Timeout: 10 * time.Second}
-	apiResp, err := apiClient.Do(apiReq)
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to GitHub: %w", err)
-	}
-	defer apiResp.Body.Close()
-
-	if apiResp.StatusCode == http.StatusOK {
-		var rel struct {
-			TagName string `json:"tag_name"`
-		}
-		if jsonErr := json.NewDecoder(apiResp.Body).Decode(&rel); jsonErr == nil {
-			if tag := strings.TrimSpace(rel.TagName); tag != "" {
-				return tag, nil
-			}
-		}
-	}
-
 	return "", fmt.Errorf("could not determine latest release version")
+}
+
+func parseSemver(v string) []int {
+	v = strings.TrimPrefix(strings.TrimSpace(v), "v")
+	parts := strings.Split(v, ".")
+	var nums []int
+	for _, p := range parts {
+		var n int
+		fmt.Sscanf(p, "%d", &n)
+		nums = append(nums, n)
+	}
+	for len(nums) < 3 {
+		nums = append(nums, 0)
+	}
+	return nums
+}
+
+func compareSemver(v1, v2 string) int {
+	s1 := parseSemver(v1)
+	s2 := parseSemver(v2)
+	for i := 0; i < len(s1) && i < len(s2); i++ {
+		if s1[i] > s2[i] {
+			return 1
+		}
+		if s1[i] < s2[i] {
+			return -1
+		}
+	}
+	return 0
 }
