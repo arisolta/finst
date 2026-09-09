@@ -16,7 +16,7 @@ import (
 	"github.com/arisolta/finst/internal/ui"
 )
 
-const Version = "v1.0.9"
+const Version = "v1.0.10"
 
 func main() {
 	var (
@@ -93,7 +93,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ticker := strings.ToUpper(strings.TrimSpace(args[len(args)-1]))
+	ticker := NormalizeTicker(args[len(args)-1])
 	if ticker == "" {
 		fmt.Fprintln(os.Stderr, "Error: ticker symbol required")
 		os.Exit(1)
@@ -333,6 +333,9 @@ func main() {
 					if edgarStatements[i].HistoricalPrice == 0 && ys.HistoricalPrice > 0 {
 						edgarStatements[i].HistoricalPrice = ys.HistoricalPrice
 					}
+					if edgarStatements[i].StockBasedCompensation == 0 && ys.StockBasedCompensation > 0 {
+						edgarStatements[i].StockBasedCompensation = ys.StockBasedCompensation
+					}
 					break
 				}
 			}
@@ -460,4 +463,21 @@ func main() {
 		screen := ui.RenderScreen(dataset, *viewFlag)
 		fmt.Print(screen)
 	}
+}
+
+// NormalizeTicker standardizes ticker formats, such as converting US dot share classes (BRK.B)
+// to Yahoo/EDGAR hyphen format (BRK-B), while preserving international exchange suffixes (.PA, .L, .DE, .T, etc.).
+func NormalizeTicker(ticker string) string {
+	t := strings.ToUpper(strings.TrimSpace(ticker))
+	if strings.Contains(t, "/") {
+		t = strings.ReplaceAll(t, "/", "-")
+	}
+	if idx := strings.LastIndex(t, "."); idx != -1 {
+		suffix := t[idx+1:]
+		// If suffix is a single letter and not London (.L) or Tokyo (.T)
+		if len(suffix) == 1 && suffix != "L" && suffix != "T" {
+			t = t[:idx] + "-" + suffix
+		}
+	}
+	return t
 }

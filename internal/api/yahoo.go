@@ -209,6 +209,7 @@ type YahooCashflowStatement struct {
 	TotalCashFromOperatingActivities YahooRawFmt `json:"totalCashFromOperatingActivities"`
 	CapitalExpenditures         YahooRawFmt `json:"capitalExpenditures"`
 	Depreciation                YahooRawFmt `json:"depreciation"`
+	StockBasedCompensation      YahooRawFmt `json:"stockBasedCompensation"`
 }
 
 type YahooEarningsTrend struct {
@@ -394,6 +395,12 @@ func (s *YahooService) ExtractPriceValuation(ticker string, res *YahooQuoteSumma
 		} else if res.FinancialData.EnterpriseValue.Raw > 0 {
 			pv.EnterpriseValue = res.FinancialData.EnterpriseValue.Raw
 		}
+		if pv.MarketCap > 0 && pv.EnterpriseValue > 0 {
+			ratio := pv.EnterpriseValue / pv.MarketCap
+			if ratio > 3.5 || ratio < 0.05 {
+				pv.EnterpriseValue = 0
+			}
+		}
 	}
 
 	if isPence || (pv.Currency == "GBP" && pv.SharePrice > 1000) {
@@ -429,21 +436,25 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 		"annualOperatingCashFlow", "annualCapitalExpenditure", "annualNetOtherInvestingChanges", "annualInvestingCashFlow", "annualEndCashPosition", "annualCashAndCashEquivalents",
 		"annualTotalDebt", "annualTotalStockholderEquity", "annualStockholdersEquity", "annualReconciledDepreciation",
 		"annualNormalizedEBITDA", "annualEBITDA", "annualFreeCashFlow", "annualPreferredStock",
+		"annualStockBasedCompensation",
 		"annualDilutedAverageShares", "annualOrdinarySharesNumber", "annualBasicAverageShares",
 		"annualCashDividendsPaid",
 		"trailingTotalRevenue", "trailingCostOfRevenue", "trailingGrossProfit", "trailingOperatingIncome",
 		"trailingOperatingExpense", "trailingNetIncomeContinuousOperations", "trailingNetIncome", "trailingDilutedEPS",
 		"trailingOperatingCashFlow", "trailingCapitalExpenditure", "trailingNetOtherInvestingChanges", "trailingInvestingCashFlow", "trailingEndCashPosition", "trailingCashAndCashEquivalents",
-		"trailingTotalDebt", "trailingTotalStockholderEquity", "trailingStockholdersEquity", "trailingReconciledDepreciation",
+		"trailingTotalDebt", "trailingLongTermDebt", "trailingTotalStockholderEquity", "trailingStockholdersEquity", "trailingReconciledDepreciation",
 		"trailingNormalizedEBITDA", "trailingEBITDA", "trailingFreeCashFlow",
+		"trailingStockBasedCompensation",
 		"trailingDilutedAverageShares", "trailingOrdinarySharesNumber",
 		"trailingCashDividendsPaid",
 		"quarterlyTotalRevenue", "quarterlyCostOfRevenue", "quarterlyGrossProfit", "quarterlyOperatingIncome",
 		"quarterlyNetIncomeContinuousOperations", "quarterlyNetIncome", "quarterlyOperatingCashFlow", "quarterlyCapitalExpenditure",
 		"quarterlyNetOtherInvestingChanges", "quarterlyInvestingCashFlow",
-		"quarterlyReconciledDepreciation", "quarterlyDilutedEPS", "quarterlyEndCashPosition", "quarterlyTotalDebt",
+		"quarterlyReconciledDepreciation", "quarterlyDilutedEPS", "quarterlyEndCashPosition", "quarterlyTotalDebt", "quarterlyLongTermDebt",
 		"quarterlyTotalStockholderEquity", "quarterlyDilutedAverageShares", "quarterlyOrdinarySharesNumber",
 		"quarterlyCashDividendsPaid",
+		"quarterlyStockBasedCompensation",
+		"annualLongTermDebt",
 	}
 
 	typeStr := strings.Join(types, ",")
@@ -578,6 +589,8 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 				st.AdjEPS = numVal
 			case "annualOperatingCashFlow", "quarterlyOperatingCashFlow", "trailingOperatingCashFlow":
 				st.OperatingCashFlow = numVal
+			case "annualStockBasedCompensation", "quarterlyStockBasedCompensation", "trailingStockBasedCompensation":
+				st.StockBasedCompensation = math.Abs(numVal)
 			case "annualCapitalExpenditure", "quarterlyCapitalExpenditure", "trailingCapitalExpenditure":
 				st.CapEx = numVal
 			case "annualNetOtherInvestingChanges", "trailingNetOtherInvestingChanges", "quarterlyNetOtherInvestingChanges",
@@ -589,6 +602,10 @@ func (s *YahooService) FetchFundamentalsTimeseries(ctx context.Context, ticker s
 				st.CashAndEquiv = numVal
 			case "annualTotalDebt", "quarterlyTotalDebt", "trailingTotalDebt":
 				st.TotalDebt = numVal
+			case "annualLongTermDebt", "quarterlyLongTermDebt", "trailingLongTermDebt":
+				if st.TotalDebt == 0 && numVal > 0 {
+					st.TotalDebt = numVal
+				}
 			case "annualPreferredStock":
 				st.PreferredStock = numVal
 			case "annualCashDividendsPaid", "quarterlyCashDividendsPaid", "trailingCashDividendsPaid":
@@ -685,6 +702,7 @@ func (s *YahooService) ExtractStatements(ticker string, res *YahooQuoteSummaryRe
 			st.OperatingCashFlow = cf.TotalCashFromOperatingActivities.Raw
 			st.CapEx = cf.CapitalExpenditures.Raw
 			st.DepreciationAmortization = cf.Depreciation.Raw
+			st.StockBasedCompensation = math.Abs(cf.StockBasedCompensation.Raw)
 		}
 
 		results = append(results, st)
@@ -727,6 +745,7 @@ func (s *YahooService) ExtractStatements(ticker string, res *YahooQuoteSummaryRe
 			st.OperatingCashFlow = cf.TotalCashFromOperatingActivities.Raw
 			st.CapEx = cf.CapitalExpenditures.Raw
 			st.DepreciationAmortization = cf.Depreciation.Raw
+			st.StockBasedCompensation = math.Abs(cf.StockBasedCompensation.Raw)
 		}
 
 		results = append(results, st)

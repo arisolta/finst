@@ -93,6 +93,15 @@ func (s *EdgarService) ResolveTicker(ctx context.Context, ticker string) (string
 
 	entry, ok := s.cikMap[upper]
 	if !ok {
+		if strings.Contains(upper, "-") {
+			alt := strings.ReplaceAll(upper, "-", ".")
+			entry, ok = s.cikMap[alt]
+		} else if strings.Contains(upper, ".") {
+			alt := strings.ReplaceAll(upper, ".", "-")
+			entry, ok = s.cikMap[alt]
+		}
+	}
+	if !ok {
 		return "", "", fmt.Errorf("ticker %s not found in SEC EDGAR directory", ticker)
 	}
 	return entry.CIK, entry.Title, nil
@@ -256,6 +265,12 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 	conceptDividends := []string{
 		"PaymentsOfDividendsCommonStock", "PaymentsOfDividends", "PaymentsOfOrdinaryDividends",
 		"DividendsCash", "PaymentsOfDividendsMinorityInterest", "Dividends",
+	}
+	conceptSBC := []string{
+		"ShareBasedCompensation", "AllocatedShareBasedCompensationExpense",
+		"AdjustmentsForSharebasedPayments",
+		"ExpenseFromSharebasedPaymentTransactionsInWhichGoodsOrServicesReceivedDidNotQualifyForRecognitionAsAssets",
+		"ExpenseFromEquitysettledSharebasedPaymentTransactionsInWhichGoodsOrServicesReceivedDidNotQualifyForRecognitionAsAssets",
 	}
 	conceptEPS := []string{"EarningsPerShareDiluted", "DilutedEarningsLossPerShare", "BasicAndDilutedEarningsLossPerShare", "EarningsPerShareBasic"}
 	conceptShares := []string{"WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageShares", "CommonStockSharesOutstanding"}
@@ -436,9 +451,15 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 			st.CashDividendsPaid = absVal
 		}
 	})
+	processDuration(conceptSBC, true, func(st *model.FinancialStatement, val float64) {
+		absVal := math.Abs(val)
+		if st.StockBasedCompensation == 0 || absVal > st.StockBasedCompensation {
+			st.StockBasedCompensation = absVal
+		}
+	})
 
 	// De-accumulate YTD cash flows into discrete quarterly cash flows
-	for _, cNames := range [][]string{conceptCFO, conceptCapEx, conceptDA, conceptDividends} {
+	for _, cNames := range [][]string{conceptCFO, conceptCapEx, conceptDA, conceptDividends, conceptSBC} {
 		for _, name := range cNames {
 			for k, pMap := range ytdMap {
 				if k.Concept != name {
@@ -471,6 +492,13 @@ func (s *EdgarService) ExtractStatements(facts *SECCompanyFacts, ticker string) 
 						case "PaymentsOfDividendsCommonStock", "PaymentsOfDividends", "PaymentsOfOrdinaryDividends", "DividendsCash", "Dividends":
 							if st.CashDividendsPaid == 0 {
 								st.CashDividendsPaid = math.Abs(val)
+							}
+						case "ShareBasedCompensation", "AllocatedShareBasedCompensationExpense",
+							"AdjustmentsForSharebasedPayments",
+							"ExpenseFromSharebasedPaymentTransactionsInWhichGoodsOrServicesReceivedDidNotQualifyForRecognitionAsAssets",
+							"ExpenseFromEquitysettledSharebasedPaymentTransactionsInWhichGoodsOrServicesReceivedDidNotQualifyForRecognitionAsAssets":
+							if st.StockBasedCompensation == 0 {
+								st.StockBasedCompensation = math.Abs(val)
 							}
 						}
 					}

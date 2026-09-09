@@ -89,7 +89,7 @@ func (r *Repository) GetFinancialStatements(ctx context.Context, ticker string) 
 		SELECT ticker, period_type, fiscal_year, fiscal_period, period_end_date,
 		       revenue, cost_of_revenue, gross_profit, operating_income, depreciation_amortization,
 		       net_income, diluted_shares, adj_eps, operating_cash_flow, capex,
-		       cash_and_equiv, total_debt, preferred_stock, total_equity, tax_expense, pretax_income, historical_price, cash_dividends_paid, updated_at
+		       cash_and_equiv, total_debt, preferred_stock, total_equity, tax_expense, pretax_income, historical_price, cash_dividends_paid, stock_based_compensation, updated_at
 		FROM financial_statements
 		WHERE ticker = ?
 		ORDER BY fiscal_year ASC, fiscal_period ASC
@@ -105,13 +105,13 @@ func (r *Repository) GetFinancialStatements(ctx context.Context, ticker string) 
 
 	for rows.Next() {
 		var st model.FinancialStatement
-		var rev, cor, gp, oi, da, ni, ds, eps, cfo, capex, cash, debt, pref, eq, tax, pretax, hp, divs sql.NullFloat64
+		var rev, cor, gp, oi, da, ni, ds, eps, cfo, capex, cash, debt, pref, eq, tax, pretax, hp, divs, sbc sql.NullFloat64
 		var endDate string
 
 		if err := rows.Scan(
 			&st.Ticker, &st.PeriodType, &st.FiscalYear, &st.FiscalPeriod, &endDate,
 			&rev, &cor, &gp, &oi, &da, &ni, &ds, &eps, &cfo, &capex,
-			&cash, &debt, &pref, &eq, &tax, &pretax, &hp, &divs, &st.UpdatedAt,
+			&cash, &debt, &pref, &eq, &tax, &pretax, &hp, &divs, &sbc, &st.UpdatedAt,
 		); err != nil {
 			return nil, false, err
 		}
@@ -135,6 +135,7 @@ func (r *Repository) GetFinancialStatements(ctx context.Context, ticker string) 
 		st.PretaxIncome = pretax.Float64
 		st.HistoricalPrice = hp.Float64
 		st.CashDividendsPaid = divs.Float64
+		st.StockBasedCompensation = sbc.Float64
 
 		// Check TTL
 		if st.PeriodType == model.PeriodAnnual {
@@ -174,8 +175,8 @@ func (r *Repository) SaveFinancialStatements(ctx context.Context, statements []m
 			ticker, period_type, fiscal_year, fiscal_period, period_end_date,
 			revenue, cost_of_revenue, gross_profit, operating_income, depreciation_amortization,
 			net_income, diluted_shares, adj_eps, operating_cash_flow, capex,
-			cash_and_equiv, total_debt, preferred_stock, total_equity, tax_expense, pretax_income, historical_price, cash_dividends_paid, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			cash_and_equiv, total_debt, preferred_stock, total_equity, tax_expense, pretax_income, historical_price, cash_dividends_paid, stock_based_compensation, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(ticker, period_type, fiscal_year, fiscal_period) DO UPDATE SET
 			period_end_date = excluded.period_end_date,
 			revenue = excluded.revenue,
@@ -196,6 +197,7 @@ func (r *Repository) SaveFinancialStatements(ctx context.Context, statements []m
 			pretax_income = excluded.pretax_income,
 			historical_price = excluded.historical_price,
 			cash_dividends_paid = excluded.cash_dividends_paid,
+			stock_based_compensation = excluded.stock_based_compensation,
 			updated_at = excluded.updated_at
 	`)
 	if err != nil {
@@ -212,7 +214,7 @@ func (r *Repository) SaveFinancialStatements(ctx context.Context, statements []m
 			strings.ToUpper(s.Ticker), s.PeriodType, s.FiscalYear, s.FiscalPeriod, s.PeriodEndDate,
 			s.Revenue, s.CostOfRevenue, s.GrossProfit, s.OperatingIncome, s.DepreciationAmortization,
 			s.NetIncome, s.DilutedShares, s.AdjEPS, s.OperatingCashFlow, s.CapEx,
-			s.CashAndEquiv, s.TotalDebt, s.PreferredStock, s.TotalEquity, s.TaxExpense, s.PretaxIncome, s.HistoricalPrice, s.CashDividendsPaid, now,
+			s.CashAndEquiv, s.TotalDebt, s.PreferredStock, s.TotalEquity, s.TaxExpense, s.PretaxIncome, s.HistoricalPrice, s.CashDividendsPaid, s.StockBasedCompensation, now,
 		); err != nil {
 			return err
 		}

@@ -113,9 +113,25 @@ func renderStandardRows(sb *strings.Builder, ds *model.FinancialDataset) {
 	// Section 3: CASH FLOW PROFILE
 	sb.WriteString(Colorize(ColorSection, " [CASH FLOW PROFILE]") + "\n")
 	printRow(sb, "Cash from Operations", ds.Periods, 1, func(p model.PeriodData) float64 { return p.OperatingCashFlow })
+
+	hasSBC := false
+	for _, p := range ds.Periods {
+		if p.StockBasedCompensation != nil && *p.StockBasedCompensation > 0 {
+			hasSBC = true
+			break
+		}
+	}
+	if hasSBC {
+		printRowNullable(sb, "  Stock-Based Comp (SBC)", ds.Periods, 1, func(p model.PeriodData) *float64 { return p.StockBasedCompensation })
+		printRowPct(sb, "    SBC % of Revenue", ds.Periods, func(p model.PeriodData) *float64 { return p.SBCPercentRevenue })
+	}
+
 	printRow(sb, "Capital Expenditures", ds.Periods, 1, func(p model.PeriodData) float64 { return p.CapEx })
 	printRow(sb, "Free Cash Flow", ds.Periods, 1, func(p model.PeriodData) float64 { return p.FreeCashFlow })
 	printRowPct(sb, "  FCF Conversion %", ds.Periods, func(p model.PeriodData) *float64 { return p.FCFConversionPct })
+	if hasSBC {
+		printRowNullable(sb, "  Adj. FCF (FCF - SBC)", ds.Periods, 1, func(p model.PeriodData) *float64 { return p.AdjustedFCF })
+	}
 	sb.WriteString(singleLine + "\n")
 
 	// Section 4: RETURNS & PROFITABILITY
@@ -147,6 +163,16 @@ func renderCompactRows(sb *strings.Builder, ds *model.FinancialDataset) {
 	printRow(sb, "Net Income", ds.Periods, 1, func(p model.PeriodData) float64 { return p.NetIncome })
 	printRowEPS(sb, "Diluted Adj. EPS", ds.Periods, func(p model.PeriodData) float64 { return p.DilutedAdjEPS })
 	printRow(sb, "Free Cash Flow", ds.Periods, 1, func(p model.PeriodData) float64 { return p.FreeCashFlow })
+	hasSBCCompact := false
+	for _, p := range ds.Periods {
+		if p.StockBasedCompensation != nil && *p.StockBasedCompensation > 0 {
+			hasSBCCompact = true
+			break
+		}
+	}
+	if hasSBCCompact {
+		printRowNullable(sb, "  Adj. FCF (FCF - SBC)", ds.Periods, 1, func(p model.PeriodData) *float64 { return p.AdjustedFCF })
+	}
 	sb.WriteString(singleLine + "\n")
 
 	sb.WriteString(Colorize(ColorSection, " [VALUATION MULTIPLES]") + "\n")
@@ -257,10 +283,25 @@ func RenderCSV(ds *model.FinancialDataset) (string, error) {
 	addRow("Diluted Adj. EPS", func(p model.PeriodData) string { return FormatEPS(p.DilutedAdjEPS) })
 	addRow("EPS Growth %", func(p model.PeriodData) string { return FormatPercentage(p.EPSGrowthPct) })
 
+	hasSBCCSV := false
+	for _, p := range ds.Periods {
+		if p.StockBasedCompensation != nil && *p.StockBasedCompensation > 0 {
+			hasSBCCSV = true
+			break
+		}
+	}
+
 	addRow("Cash from Operations", func(p model.PeriodData) string { return FormatNumber(p.OperatingCashFlow, 1) })
+	if hasSBCCSV {
+		addRow("Stock-Based Comp (SBC)", func(p model.PeriodData) string { return FormatNullableNumber(p.StockBasedCompensation, 1) })
+		addRow("SBC % of Revenue", func(p model.PeriodData) string { return FormatPercentage(p.SBCPercentRevenue) })
+	}
 	addRow("Capital Expenditures", func(p model.PeriodData) string { return FormatNumber(p.CapEx, 1) })
 	addRow("Free Cash Flow", func(p model.PeriodData) string { return FormatNumber(p.FreeCashFlow, 1) })
 	addRow("FCF Conversion %", func(p model.PeriodData) string { return FormatPercentage(p.FCFConversionPct) })
+	if hasSBCCSV {
+		addRow("Adj. FCF (FCF - SBC)", func(p model.PeriodData) string { return FormatNullableNumber(p.AdjustedFCF, 1) })
+	}
 
 	addRow("Return on Equity (ROE)", func(p model.PeriodData) string { return FormatPercentage(p.ROE) })
 	addRow("Return on Inv. Cap (ROIC)", func(p model.PeriodData) string { return FormatPercentage(p.ROIC) })

@@ -314,6 +314,14 @@ func (b *DatasetBuilder) BuildDataset(
 				scaled := *p.EnterpriseValue / scaleFactor
 				p.EnterpriseValue = &scaled
 			}
+			if p.StockBasedCompensation != nil {
+				scaled := *p.StockBasedCompensation / scaleFactor
+				p.StockBasedCompensation = &scaled
+			}
+			if p.AdjustedFCF != nil {
+				scaled := *p.AdjustedFCF / scaleFactor
+				p.AdjustedFCF = &scaled
+			}
 		}
 	}
 

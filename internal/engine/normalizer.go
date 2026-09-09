@@ -134,6 +134,7 @@ func (n *StatementNormalizer) computeLTM(quarters []model.FinancialStatement, an
 			ltm.NetIncome += q.NetIncome
 			ltm.OperatingCashFlow += q.OperatingCashFlow
 			ltm.CapEx += q.CapEx
+			ltm.StockBasedCompensation += q.StockBasedCompensation
 			ltm.TaxExpense += q.TaxExpense
 			ltm.PretaxIncome += q.PretaxIncome
 			ltm.CashDividendsPaid += q.CashDividendsPaid
@@ -144,6 +145,17 @@ func (n *StatementNormalizer) computeLTM(quarters []model.FinancialStatement, an
 		}
 
 		ltm.DilutedShares = latest.DilutedShares
+		if len(annuals) > 0 {
+			lastAnn := annuals[len(annuals)-1]
+			if lastAnn.DilutedShares > 0 && ltm.DilutedShares > 0 {
+				ratio := ltm.DilutedShares / lastAnn.DilutedShares
+				if ratio > 5.0 || ratio < 0.2 {
+					ltm.DilutedShares = lastAnn.DilutedShares
+				}
+			} else if ltm.DilutedShares == 0 && lastAnn.DilutedShares > 0 {
+				ltm.DilutedShares = lastAnn.DilutedShares
+			}
+		}
 		if ltm.DilutedShares > 0 {
 			ltm.AdjEPS = ltm.NetIncome / ltm.DilutedShares
 		} else {
@@ -176,6 +188,9 @@ func (n *StatementNormalizer) computeLTM(quarters []model.FinancialStatement, an
 			}
 			if ltm.CashDividendsPaid == 0 && lastAnn.CashDividendsPaid != 0 {
 				ltm.CashDividendsPaid = lastAnn.CashDividendsPaid
+			}
+			if ltm.StockBasedCompensation == 0 && lastAnn.StockBasedCompensation != 0 {
+				ltm.StockBasedCompensation = lastAnn.StockBasedCompensation
 			}
 		}
 
@@ -221,6 +236,7 @@ func (n *StatementNormalizer) convertStatement(ctx context.Context, st *model.Fi
 	st.PretaxIncome *= avgRate
 	st.AdjEPS *= avgRate
 	st.CashDividendsPaid *= avgRate
+	st.StockBasedCompensation *= avgRate
 
 	// Stock (balance sheet) metrics convert by Spot FX Rate
 	st.CashAndEquiv *= spotRate

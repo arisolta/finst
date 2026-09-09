@@ -94,10 +94,16 @@ func BuildHistoricalPeriodData(
 		mktCap = currentPrice.MarketCap
 	}
 
+	expectedEV := CalculateEnterpriseValue(mktCap, debt, pref, cash)
 	if isLTM && currentPrice.EnterpriseValue > 0 {
-		ev = currentPrice.EnterpriseValue
+		diff := math.Abs(currentPrice.EnterpriseValue - expectedEV)
+		if mktCap > 0 && diff/mktCap > 0.5 {
+			ev = expectedEV
+		} else {
+			ev = currentPrice.EnterpriseValue
+		}
 	} else {
-		ev = CalculateEnterpriseValue(mktCap, debt, pref, cash)
+		ev = expectedEV
 	}
 
 	// Percentages & Margins
@@ -158,6 +164,18 @@ func BuildHistoricalPeriodData(
 		capexVal = -capexVal
 	}
 
+	var sbcPtr, sbcPctPtr, adjFcfPtr *float64
+	if st.StockBasedCompensation > 0 {
+		sbc := st.StockBasedCompensation
+		sbcPtr = &sbc
+		if st.Revenue > 0 {
+			sbcPct := (sbc / st.Revenue) * 100
+			sbcPctPtr = &sbcPct
+		}
+		adjFcf := fcf - sbc
+		adjFcfPtr = &adjFcf
+	}
+
 	return model.PeriodData{
 		Label:                    label,
 		FiscalYear:               st.FiscalYear,
@@ -181,9 +199,12 @@ func BuildHistoricalPeriodData(
 		DilutedAdjEPS:            st.AdjEPS,
 		EPSGrowthPct:             epsGrowth,
 		OperatingCashFlow:        st.OperatingCashFlow,
+		StockBasedCompensation:   sbcPtr,
+		SBCPercentRevenue:        sbcPctPtr,
 		DepreciationAmortization: st.DepreciationAmortization,
 		CapEx:                    capexVal,
 		FreeCashFlow:             fcf,
+		AdjustedFCF:              adjFcfPtr,
 		FCFConversionPct:         fcfConvPct,
 		ROE:                      roe,
 		ROIC:                     roic,

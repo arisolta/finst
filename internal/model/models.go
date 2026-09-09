@@ -66,6 +66,7 @@ type FinancialStatement struct {
 	PretaxIncome             float64   `json:"pretax_income,omitempty"`
 	CashDividendsPaid        float64   `json:"cash_dividends_paid,omitempty"`
 	HistoricalPrice          float64   `json:"historical_price,omitempty"`
+	StockBasedCompensation   float64   `json:"stock_based_compensation,omitempty"`
 	UpdatedAt                time.Time `json:"updated_at"`
 }
 
@@ -125,9 +126,12 @@ type PeriodData struct {
 
 	// Cash Flow Profile
 	OperatingCashFlow        float64  `json:"operating_cash_flow"`
+	StockBasedCompensation   *float64 `json:"stock_based_compensation,omitempty"`
+	SBCPercentRevenue        *float64 `json:"sbc_percent_revenue,omitempty"`
 	DepreciationAmortization float64  `json:"depreciation_amortization"`
 	CapEx                    float64  `json:"capex"`
 	FreeCashFlow             float64  `json:"free_cash_flow"`
+	AdjustedFCF              *float64 `json:"adjusted_fcf,omitempty"`
 	FCFConversionPct         *float64 `json:"fcf_conversion_pct,omitempty"`
 
 	// Returns & Profitability

@@ -90,6 +90,7 @@ func runMigrations(db *sql.DB) error {
 		pretax_income REAL,
 		historical_price REAL,
 		cash_dividends_paid REAL,
+		stock_based_compensation REAL,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		PRIMARY KEY (ticker, period_type, fiscal_year, fiscal_period)
 	);
@@ -124,5 +125,6 @@ func runMigrations(db *sql.DB) error {
 	}
 	_, _ = db.Exec(`ALTER TABLE financial_statements ADD COLUMN historical_price REAL;`)
 	_, _ = db.Exec(`ALTER TABLE financial_statements ADD COLUMN cash_dividends_paid REAL;`)
+	_, _ = db.Exec(`ALTER TABLE financial_statements ADD COLUMN stock_based_compensation REAL;`)
 	return nil
 }
